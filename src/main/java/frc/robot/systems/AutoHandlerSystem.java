@@ -1,5 +1,8 @@
 package frc.robot.systems;
 
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.HardwareMap;
+
 public class AutoHandlerSystem {
 	/* ======================== Constants ======================== */
 	// Auto FSM state definitions
@@ -22,9 +25,9 @@ public class AutoHandlerSystem {
 	private int currentStateIndex;
 
 	//FSM Systems that the autoHandlerFSM uses
-	private FSMSystem subsystem1;
-	private FSMSystem subsystem2;
-	private FSMSystem subsystem3;
+	private DriveFSMSystem driveSystem;
+	private Mech1FSMSystem mech1System;
+	private Mech2FSMSystem mech2System;
 
 	//Predefined auto paths
 	private static final AutoFSMState[] PATH1 = new AutoFSMState[]{
@@ -43,10 +46,10 @@ public class AutoHandlerSystem {
 	 * @param fsm2 the second subsystem that the auto handler will call functions on
 	 * @param fsm3 the third subsystem that the auto handler will call functions on
 	 */
-	public AutoHandlerSystem(FSMSystem fsm1, FSMSystem fsm2, FSMSystem fsm3) {
-		subsystem1 = fsm1;
-		subsystem2 = fsm2;
-		subsystem3 = fsm3;
+	public AutoHandlerSystem(DriveFSMSystem fsm1, Mech1FSMSystem fsm2, Mech2FSMSystem fsm3) {
+		driveSystem = fsm1;
+		mech1System = fsm2;
+		mech2System = fsm3;
 	}
 
 	/* ======================== Public methods ======================== */
@@ -68,9 +71,17 @@ public class AutoHandlerSystem {
 	 * @param path the auto path to be executed
 	 */
 	public void reset(AutoPath path) {
-		subsystem1.reset();
-		subsystem2.reset();
-		subsystem3.reset();
+		if (HardwareMap.isDriveHardwarePresent()) {
+			driveSystem.reset();
+		}
+
+		if (HardwareMap.isMech1HardwarePresent()) {
+			mech1System.reset();
+		}
+
+		if (HardwareMap.isMech2HardwarePresent()) {
+			mech2System.reset();
+		}
 
 		currentStateIndex = 0;
 		if (path == AutoPath.PATH1) {
@@ -90,27 +101,13 @@ public class AutoHandlerSystem {
 			return;
 		}
 
-		boolean isCurrentStateFinished;
-		System.out.println("In State: " + getCurrentState());
-		switch (getCurrentState()) {
-			case STATE1:
-				isCurrentStateFinished = subsystem1.updateAutonomous(AutoFSMState.STATE1)
-					&& subsystem2.updateAutonomous(AutoFSMState.STATE1)
-					&& subsystem3.updateAutonomous(AutoFSMState.STATE1);
-				break;
-			case STATE2:
-				isCurrentStateFinished = subsystem1.updateAutonomous(AutoFSMState.STATE2)
-					&& subsystem2.updateAutonomous(AutoFSMState.STATE2)
-					&& subsystem3.updateAutonomous(AutoFSMState.STATE2);
-				break;
-			case STATE3:
-				isCurrentStateFinished = subsystem1.updateAutonomous(AutoFSMState.STATE3)
-					&& subsystem2.updateAutonomous(AutoFSMState.STATE3)
-					&& subsystem3.updateAutonomous(AutoFSMState.STATE3);
-				break;
-			default:
-				throw new IllegalStateException("Invalid state: " + getCurrentState().toString());
-		}
+		boolean isCurrentStateFinished = true;
+		SmartDashboard.putString("Auto State", getCurrentState().toString());
+
+		isCurrentStateFinished &= driveSystem.updateAutonomous(getCurrentState());
+		isCurrentStateFinished &= mech1System.updateAutonomous(getCurrentState());
+		isCurrentStateFinished &= mech2System.updateAutonomous(getCurrentState());
+		
 		if (isCurrentStateFinished) {
 			currentStateIndex++;
 		}

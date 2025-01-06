@@ -7,7 +7,9 @@ package frc.robot;
 import edu.wpi.first.wpilibj.TimedRobot;
 
 // Systems
-import frc.robot.systems.FSMSystem;
+import frc.robot.systems.DriveFSMSystem;
+import frc.robot.systems.Mech1FSMSystem;
+import frc.robot.systems.Mech2FSMSystem;
 import frc.robot.systems.AutoHandlerSystem;
 import frc.robot.systems.AutoHandlerSystem.AutoPath;
 
@@ -19,9 +21,9 @@ public class Robot extends TimedRobot {
 	private TeleopInput input;
 
 	// Systems
-	private FSMSystem subSystem1;
-	private FSMSystem subSystem2;
-	private FSMSystem subSystem3;
+	private DriveFSMSystem driveSystem;
+	private Mech1FSMSystem mech1System;
+	private Mech2FSMSystem mech2System;
 
 	private AutoHandlerSystem autoHandler;
 
@@ -35,10 +37,18 @@ public class Robot extends TimedRobot {
 		input = new TeleopInput();
 
 		// Instantiate all systems here
-		subSystem1 = new FSMSystem();
-		subSystem2 = new FSMSystem();
-		subSystem3 = new FSMSystem();
-		autoHandler = new AutoHandlerSystem(subSystem1, subSystem2, subSystem3);
+		if (HardwareMap.isDriveHardwarePresent()) {
+			driveSystem = new DriveFSMSystem();
+		}
+
+		if (HardwareMap.isMech1HardwarePresent()) {
+			mech1System = new Mech1FSMSystem();
+		}
+
+		if (HardwareMap.isMech2HardwarePresent()) {
+			mech2System = new Mech2FSMSystem();
+		}
+		autoHandler = new AutoHandlerSystem(driveSystem, mech1System, mech2System);
 	}
 
 	@Override
@@ -55,16 +65,16 @@ public class Robot extends TimedRobot {
 	@Override
 	public void teleopInit() {
 		System.out.println("-------- Teleop Init --------");
-		subSystem1.reset();
-		subSystem2.reset();
-		subSystem3.reset();
+		driveSystem.reset();
+		mech1System.reset();
+		mech2System.reset();
 	}
 
 	@Override
 	public void teleopPeriodic() {
-		subSystem1.update(input);
-		subSystem2.update(input);
-		subSystem3.update(input);
+		driveSystem.update(input);
+		mech1System.update(input);
+		mech2System.update(input);
 	}
 
 	@Override

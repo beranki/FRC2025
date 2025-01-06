@@ -1,7 +1,5 @@
 package frc.robot;
 
-import edu.wpi.first.wpilibj.DigitalInput;
-
 /**
  * HardwareMap provides a centralized spot for constants related to the hardware
  * configuration of the robot.
@@ -14,18 +12,36 @@ public final class HardwareMap {
 	public static final int CAN_ID_SPARK_DRIVE_BACK_LEFT = 4;
 	public static final int CAN_ID_SPARK_SHOOTER = 5;
 
-	// Pneumatics channel numbers
-	public static final int PCM_CHANNEL_INTAKE_CYLINDER_FORWARD = 1;
-	public static final int PCM_CHANNEL_INTAKE_CYLINDER_REVERSE = 2;
-
-	// Place jumper from DIO pin 9 to GND to indicate this is a test setup
-	private static final int DIO_TEST_SETUP_CHANNEL = 9;
-	private static DigitalInput testBoardPin = new DigitalInput(HardwareMap.DIO_TEST_SETUP_CHANNEL);
+	/* ===== Hardware Availability ===== */
 	/**
-	 * Check if the current RoboRIO is part of a test setup or real robot.
-	 * @return true if the current setup is a test setup
+	 * Check if drive hardware is available to the RoboRIO.
+	 * @return true if drive hardware is present
 	 */
-	public static boolean isTestBoard() {
-		return !HardwareMap.testBoardPin.get();
+	public static boolean isDriveHardwarePresent() {
+		return true;
+	}
+
+	/**
+	 * Check if mech 1 hardware is available to the RoboRIO.
+	 * @return true if mech hardware is present
+	 */
+	public static boolean isMech1HardwarePresent() {
+		return false;
+	}
+
+	/**
+	 * Check if mech 2 hardware is available to the RoboRIO.
+	 * @return true if mech 2 hardware is present
+	 */
+	public static boolean isMech2HardwarePresent() {
+		return false;
+	}
+
+	/**
+	 * Check if drive hardware is available to the RoboRIO.
+	 * @return true if drive hardware is present
+	 */
+	public static boolean isCVHardwarePresent() {
+		return false;
 	}
 }

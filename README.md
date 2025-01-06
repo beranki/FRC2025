@@ -3,10 +3,10 @@
 ## Code Structure
 This project will use the FSMSystem framework, representing each subsystem as a finite state machine.
 
-FSM diagrams for each subsystem are located in the [doc](docs) folder.
-* [Drive FSM](docs/DriveFSM.md)
-* [Mech 1 FSM](docs/Mech1FSM.md)
-* [Mech 2 FSM](docs/Mech2FSM.md)
+FSM diagrams for each subsystem are located in the [doc](doc) folder.
+* [Drive FSM](doc/DriveFSM.md)
+* [Mech 1 FSM](doc/Mech1FSM.md)
+* [Mech 2 FSM](doc/Mech2FSM.md)
 
 [![Javadoc](https://github.com/Tino-FRC-2473/FRC2025/actions/workflows/javadoc.yml/badge.svg)](https://github.com/Tino-FRC-2473/FRC2025/actions/workflows/javadoc.yml)
 

@@ -107,7 +107,7 @@ public class AutoHandlerSystem {
 		isCurrentStateFinished &= driveSystem.updateAutonomous(getCurrentState());
 		isCurrentStateFinished &= mech1System.updateAutonomous(getCurrentState());
 		isCurrentStateFinished &= mech2System.updateAutonomous(getCurrentState());
-		
+
 		if (isCurrentStateFinished) {
 			currentStateIndex++;
 		}

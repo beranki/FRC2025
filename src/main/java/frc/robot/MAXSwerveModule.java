@@ -7,43 +7,54 @@ import com.ctre.phoenix6.controls.DutyCycleOut;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
-import com.ctre.phoenix6.hardware.TalonFX;
+import com.revrobotics.AbsoluteEncoder;
+import com.revrobotics.RelativeEncoder;
+import com.revrobotics.spark.SparkMax;
+import com.revrobotics.spark.SparkMaxAlternateEncoder;
+import com.revrobotics.spark.SparkLowLevel.MotorType;
+import com.revrobotics.spark.config.AbsoluteEncoderConfig;
+import com.revrobotics.spark.config.AlternateEncoderConfig;
+import com.revrobotics.spark.config.SparkBaseConfig;
+
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import frc.robot.utils.CTREConfigs;
 import frc.robot.utils.Conversions;
+import frc.robot.utils.SparkMaxConfigs;
 import frc.robot.constants.Constants;
+import frc.robot.constants.SwerveConstants;
+import frc.robot.constants.SwerveConstants.ModuleConstants;
 
-public class SwerveModule {
+public class MAXSwerveModule {
     private Rotation2d angleOffset;
 
-    private TalonFX turnMotor;
-    private TalonFX driveMotor;
-    private CANcoder turningEncoder;
+    private SparkMax turnMotor;
+    private SparkMax driveMotor;
+
+    private RelativeEncoder drivingEncoder;
+    private AbsoluteEncoder turningEncoder;
 
     private final SimpleMotorFeedforward driveFeedForward =
             new SimpleMotorFeedforward(
-                Constants.Swerve.DRIVING_S,
-                Constants.Swerve.DRIVING_V, 
-                Constants.Swerve.DRIVING_A);
+                ModuleConstants.DRIVING_S,
+                ModuleConstants.DRIVING_V, 
+                ModuleConstants.DRIVING_A);
 
-    private final DutyCycleOut driveDutyCycle = new DutyCycleOut(0);
-    private final VelocityVoltage driveVelocity = new VelocityVoltage(0);
-
-    private final PositionVoltage anglePosition = new PositionVoltage(0);
-
-    private final CTREConfigs ctreConfigs = new CTREConfigs();
-
-    public SwerveModule(int driveID, int turnID, int canID, double chassisAngularOffset) {
+    public MAXSwerveModule(int driveID, int turnID, double chassisAngularOffset) {
         angleOffset = new Rotation2d(chassisAngularOffset);
 
-        turningEncoder = new CANcoder(canID);
-        turningEncoder.getConfigurator().apply(ctreConfigs.swerveCANcoderConfig);
+        turnMotor = new SparkMax(turnID, MotorType.kBrushless);
+        driveMotor = new SparkMax(driveID, MotorType.kBrushless);
 
-        turnMotor = new TalonFX(turnID);
-        turnMotor.getConfigurator().apply(ctreConfigs.swerveTurnFXConfig);
+        drivingEncoder = driveMotor.getEncoder();
+        turningEncoder = turnMotor.getAbsoluteEncoder();
+
+        AbsoluteEncoderConfig con = new AbsoluteEncoderConfig();
+        SparkBaseConfig c2 = new SparkBaseConfig();
+        c2.
+
         resetToAbsolute();
 
         driveMotor = new TalonFX(driveID);

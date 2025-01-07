@@ -8,8 +8,8 @@ import edu.wpi.first.wpilibj.TimedRobot;
 
 // Systems
 import frc.robot.systems.DriveFSMSystem;
-import frc.robot.systems.Mech1FSMSystem;
-import frc.robot.systems.Mech2FSMSystem;
+import frc.robot.systems.FunnelFSMSystem;
+import frc.robot.systems.ElevatorFSMSystem;
 import frc.robot.systems.AutoHandlerSystem;
 import frc.robot.systems.AutoHandlerSystem.AutoPath;
 
@@ -22,8 +22,8 @@ public class Robot extends TimedRobot {
 
 	// Systems
 	private DriveFSMSystem driveSystem;
-	private Mech1FSMSystem mech1System;
-	private Mech2FSMSystem mech2System;
+	private FunnelFSMSystem mech1System;
+	private ElevatorFSMSystem mech2System;
 
 	private AutoHandlerSystem autoHandler;
 
@@ -42,11 +42,11 @@ public class Robot extends TimedRobot {
 		}
 
 		if (HardwareMap.isMech1HardwarePresent()) {
-			mech1System = new Mech1FSMSystem();
+			mech1System = new FunnelFSMSystem();
 		}
 
 		if (HardwareMap.isMech2HardwarePresent()) {
-			mech2System = new Mech2FSMSystem();
+			mech2System = new ElevatorFSMSystem();
 		}
 		autoHandler = new AutoHandlerSystem(driveSystem, mech1System, mech2System);
 	}

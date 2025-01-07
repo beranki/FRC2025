@@ -10,7 +10,7 @@ import frc.robot.TeleopInput;
 import frc.robot.HardwareMap;
 import frc.robot.systems.AutoHandlerSystem.AutoFSMState;
 
-public class Mech1FSMSystem {
+public class FunnelFSMSystem {
 	/* ======================== Constants ======================== */
 	// FSM state definitions
 	public enum FSMState {
@@ -33,7 +33,7 @@ public class Mech1FSMSystem {
 	 * one-time initialization or configuration of hardware required. Note
 	 * the constructor is called only once when the robot boots.
 	 */
-	public Mech1FSMSystem() {
+	public FunnelFSMSystem() {
 		// Perform hardware init
 		exampleMotor = new SparkMax(HardwareMap.CAN_ID_SPARK_SHOOTER,
 										SparkMax.MotorType.kBrushless);

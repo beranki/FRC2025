@@ -6,11 +6,26 @@ package frc.robot;
  */
 public final class HardwareMap {
 	// ID numbers for devices on the CAN bus
-	public static final int CAN_ID_SPARK_DRIVE_FRONT_RIGHT = 1;
-	public static final int CAN_ID_SPARK_DRIVE_BACK_RIGHT = 2;
-	public static final int CAN_ID_SPARK_DRIVE_FRONT_LEFT = 3;
-	public static final int CAN_ID_SPARK_DRIVE_BACK_LEFT = 4;
-	public static final int CAN_ID_SPARK_SHOOTER = 5;
+	public static final int TALON_ID_DRIVE_FRONT_RIGHT = 1;
+	public static final int TALON_ID_TURN_FRONT_RIGHT = 2;
+
+	public static final int TALON_ID_DRIVE_BACK_RIGHT = 3;
+	public static final int TALON_ID_TURN_BACK_RIGHT = 4;
+
+	public static final int TALON_ID_DRIVE_FRONT_LEFT = 5;
+	public static final int TALON_ID_TURN_FRONT_LEFT = 6;
+
+	public static final int TALON_ID_DRIVE_BACK_LEFT = 7;
+	public static final int TALON_ID_TURN_BACK_LEFT = 8;
+
+	public static final int CANCODER_ID_FRONT_LEFT = 1;
+	public static final int CANCODER_ID_FRONT_RIGHT = 1;
+	public static final int CANCODER_ID_BACK_LEFT = 1;
+	public static final int CANCODER_ID_BACK_RIGHT = 1;
+
+	public static final int PIGEON_GYRO_ID = 1;
+
+	public static final int CAN_ID_SPARK_SHOOTER = 0;
 
 	/* ===== Hardware Availability ===== */
 	/**

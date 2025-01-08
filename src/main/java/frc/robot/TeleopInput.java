@@ -78,6 +78,14 @@ public class TeleopInput {
 		return driverController.getTriangleButton();
 	}
 
+	/**
+	 * Get if triangle button of Right Joystick is pressed.
+	 * @return If Triangle button is pressed
+	 */
+	public boolean isShareButtonPressed() {
+		return driverController.getShareButton();
+	}
+
 	/* ------------------------ Mech Controller ------------------------ */
 	
 	/**

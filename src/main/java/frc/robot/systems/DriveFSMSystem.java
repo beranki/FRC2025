@@ -175,15 +175,19 @@ public class DriveFSMSystem {
 	 */
 	private void handleTeleOpState(TeleopInput input) {
 		
-		double translationVal = MathUtil.applyDeadband(
+		double translationVal = -MathUtil.applyDeadband(
 			input.getDriveLeftJoystickY(), OIConstants.DRIVE_DEADBAND);
-		double strafeVal = MathUtil.applyDeadband(
+		double strafeVal = -MathUtil.applyDeadband(
 			input.getDriveLeftJoystickX(), OIConstants.DRIVE_DEADBAND
 		);
-		double rotationVal = MathUtil.applyDeadband(
+		double rotationVal = -MathUtil.applyDeadband(
 			input.getDriveRightJoystickX(), OIConstants.DRIVE_DEADBAND
 		);
 		
+		if (input.isShareButtonPressed()) {
+			zeroHeading();
+		}
+
 		drive(
 			new Translation2d(translationVal, strafeVal)
 				.times(DriveConstants.MAX_SPEED_METERS_PER_SECOND),
@@ -284,6 +288,8 @@ public class DriveFSMSystem {
 
     public void zeroHeading() {
         setHeading(new Rotation2d());
+
+		gyro.reset();
 		gyro.setAngleAdjustment(0);
     }
 

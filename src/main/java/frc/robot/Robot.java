@@ -3,6 +3,9 @@
 // the WPILib BSD license file in the root directory of this project.
 package frc.robot;
 
+import java.io.File;
+
+import edu.wpi.first.wpilibj.Filesystem;
 // WPILib Imports
 import edu.wpi.first.wpilibj.TimedRobot;
 
@@ -38,7 +41,7 @@ public class Robot extends TimedRobot {
 
 		// Instantiate all systems here
 		if (HardwareMap.isDriveHardwarePresent()) {
-			driveSystem = new DriveFSMSystem("");
+			driveSystem = new DriveFSMSystem(new File(Filesystem.getDeployDirectory(), "swerve"));
 		}
 
 		// if (HardwareMap.isMech1HardwarePresent()) {

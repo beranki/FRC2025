@@ -111,6 +111,9 @@ public class DriveFSMSystem {
 	public void reset() {
 		currentState = FSMState.TELEOP_STATE;
 
+		resetEncoders();
+		zeroHeading();
+
 		// Call one tick of update to ensure outputs reflect start state
 		update(null);
 	}
@@ -267,7 +270,7 @@ public class DriveFSMSystem {
 	}
 
 	public Rotation2d getHeading() {
-        return gyro.getRotation2d();
+        return Rotation2d.fromDegrees(-gyro.getAngle());
     }
 
     public void setHeading(Rotation2d heading) {
@@ -281,6 +284,7 @@ public class DriveFSMSystem {
 
     public void zeroHeading() {
         setHeading(new Rotation2d());
+		gyro.setAngleAdjustment(0);
     }
 
 

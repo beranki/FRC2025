@@ -12,7 +12,7 @@ import frc.robot.utils.COTSTalonFXSwerveConstants;
 public class Constants {
     public class Swerve {
         public static final COTSTalonFXSwerveConstants chosenModule =
-                COTSTalonFXSwerveConstants.SDS.MK4i.Falcon500(COTSTalonFXSwerveConstants.SDS.MK4i.driveRatios.L2);
+                COTSTalonFXSwerveConstants.SDS.MK4i.KrakenX60(COTSTalonFXSwerveConstants.SDS.MK4i.driveRatios.L2);
 
         public static final double TRACK_WIDTH = Units.inchesToMeters(22.5);
         public static final double WHEEL_BASE = Units.inchesToMeters(22.75);

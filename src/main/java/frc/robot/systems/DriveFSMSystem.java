@@ -10,21 +10,17 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.SPI;
 
 // CTRE Imports
-import com.ctre.phoenix6.hardware.Pigeon2;
-import com.ctre.phoenix6.configs.Pigeon2Configuration;
 
 // Third party Hardware Imports
-import org.photonvision.PhotonCamera;
-import org.photonvision.PhotonUtils;
+import com.kauailabs.navx.frc.AHRS;
 
 // Robot Imports
 import frc.robot.TeleopInput;
-import frc.robot.constants.Constants;
-import frc.robot.constants.Constants.OIConstants;
-import frc.robot.constants.Constants.VisionConstants;
+import frc.robot.constants.SwerveConstants.OIConstants;
+import frc.robot.constants.SwerveConstants.DriveConstants;
 import frc.robot.HardwareMap;
 import frc.robot.systems.AutoHandlerSystem.AutoFSMState;
 import frc.robot.SwerveModule;
@@ -48,10 +44,7 @@ public class DriveFSMSystem {
 	public SwerveModule brModule;
 	public SwerveModule blModule;
 	
-	public Pigeon2 gyro;
-	private PhotonCamera camera;
-
-	private int lockedSpeakerId;
+	private AHRS gyro = new AHRS(SPI.Port.kMXP);
 
 	/* ======================== Constructor ======================== */
 	/**
@@ -61,48 +54,39 @@ public class DriveFSMSystem {
 	 */
 	public DriveFSMSystem(String cameraName) {
 		// Perform hardware init
-		gyro = new Pigeon2(HardwareMap.PIGEON_GYRO_ID);
-		gyro.getConfigurator().apply(new Pigeon2Configuration());
-		gyro.setYaw(0);
-
-		lockedSpeakerId = 0;
+		gyro.reset();
+		gyro.setAngleAdjustment(0);
 
 		flModule = new SwerveModule(
-			HardwareMap.TALON_ID_DRIVE_FRONT_LEFT,
-			HardwareMap.TALON_ID_TURN_FRONT_LEFT,
-			HardwareMap.CANCODER_ID_FRONT_LEFT, 
-			Constants.Swerve.FRONT_LEFT_ANGLE_OFFSET
+			HardwareMap.FRONT_LEFT_DRIVING_CAN_ID,
+			HardwareMap.FRONT_LEFT_TURNING_CAN_ID,
+			DriveConstants.FRONT_LEFT_CHASSIS_ANGULAR_OFFSET
 		);
 
 		frModule = new SwerveModule(
-			HardwareMap.TALON_ID_DRIVE_FRONT_RIGHT,
-			HardwareMap.TALON_ID_TURN_FRONT_RIGHT,
-			HardwareMap.CANCODER_ID_FRONT_RIGHT, 
-			Constants.Swerve.FRONT_RIGHT_ANGLE_OFFSET
+			HardwareMap.FRONT_RIGHT_DRIVING_CAN_ID,
+			HardwareMap.FRONT_RIGHT_TURNING_CAN_ID,
+			DriveConstants.FRONT_RIGHT_CHASSIS_ANGULAR_OFFSET
 		);
 
 		blModule = new SwerveModule(
-			HardwareMap.TALON_ID_DRIVE_BACK_LEFT,
-			HardwareMap.TALON_ID_TURN_BACK_LEFT,
-			HardwareMap.CANCODER_ID_BACK_LEFT, 
-			Constants.Swerve.BACK_LEFT_ANGLE_OFFSET
+			HardwareMap.REAR_LEFT_DRIVING_CAN_ID,
+			HardwareMap.REAR_LEFT_TURNING_CAN_ID,
+			DriveConstants.REAR_LEFT_CHASSIS_ANGULAR_OFFSET
 		);
 
 		brModule = new SwerveModule(
-			HardwareMap.TALON_ID_DRIVE_BACK_RIGHT,
-			HardwareMap.TALON_ID_TURN_BACK_RIGHT,
-			HardwareMap.CANCODER_ID_BACK_RIGHT, 
-			Constants.Swerve.BACK_RIGHT_ANGLE_OFFSET
+			HardwareMap.REAR_RIGHT_DRIVING_CAN_ID,
+			HardwareMap.REAR_RIGHT_TURNING_CAN_ID,
+			DriveConstants.REAR_RIGHT_CHASSIS_ANGULAR_OFFSET
 		);
 
 		swerveDrivePoseEstimator = new SwerveDrivePoseEstimator(
-			Constants.Swerve.SWERVE_DRIVE_KINEMATICS,
-			getGyroYaw(),
+			DriveConstants.DRIVE_KINEMATICS,
+			getHeading(),
 			getModulePositions(),
 			new Pose2d()
 		);
-
-		camera = new PhotonCamera(cameraName);
 
 		// Reset state machine
 		reset();
@@ -139,15 +123,13 @@ public class DriveFSMSystem {
 	 */
 	public void update(TeleopInput input) {
 		swerveDrivePoseEstimator.update(
-			getGyroYaw(), getModulePositions()
+			getHeading(), getModulePositions()
 		);
 
 		switch (currentState) {
 			case TELEOP_STATE:
 				handleTeleOpState(input);
 				break;
-			case ALIGN_TAG_STATE:
-				handleAlignTagState(input, lockedSpeakerId);
 			default:
 				throw new IllegalStateException("Invalid state: " + currentState.toString());
 		}
@@ -160,16 +142,7 @@ public class DriveFSMSystem {
 	 * @return if the action carried out in this state has finished executing
 	 */
 	public boolean updateAutonomous(AutoFSMState autoState) {
-		switch (autoState) {
-			case STATE1:
-				return handleAutoState1();
-			case STATE2:
-				return handleAutoState2();
-			case STATE3:
-				return handleAutoState3();
-			default:
-				return true;
-		}
+		return true;
 	}
 
 	/* ======================== Private methods ======================== */
@@ -185,17 +158,7 @@ public class DriveFSMSystem {
 	private FSMState nextState(TeleopInput input) {
 		switch (currentState) {
 			case TELEOP_STATE:
-				if (input.isAlignmentButtonPressed()) {
-					return FSMState.ALIGN_TAG_STATE;
-				} else {
-					return FSMState.TELEOP_STATE;
-				}
-			case ALIGN_TAG_STATE:
-				if (input.isAlignmentButtonPressed()) {
-					return FSMState.ALIGN_TAG_STATE;
-				} else {
-					return FSMState.TELEOP_STATE;
-				}
+				return FSMState.TELEOP_STATE;
 			default:
 				throw new IllegalStateException("Invalid state: " + currentState.toString());
 		}
@@ -220,87 +183,36 @@ public class DriveFSMSystem {
 		
 		drive(
 			new Translation2d(translationVal, strafeVal)
-				.times(Constants.Swerve.MAX_SPEED_METERS),
-			rotationVal * Constants.Swerve.MAX_ANGULAR_VELOCITY,
-			true,
+				.times(DriveConstants.MAX_SPEED_METERS_PER_SECOND),
+			rotationVal * DriveConstants.MAX_ANGULAR_SPEED,
 			true
 		);
 	}
 
-	/**
-	 * Handle behavior in ALIGN_TAG_STATE.
-	 * @param input Global TeleopInput if robot in teleop mode or null if
-	 *        the robot is in autonomous mode.
-	 */
-	private void handleAlignTagState(TeleopInput input, int lockedSpeakerId) {
-        boolean targetVisible = false;
-        double targetYaw = 0.0;
-        double targetRange = 0.0;
-
-        var results = camera.getAllUnreadResults();
-
-        if (!results.isEmpty()) {
-            var result = results.get(results.size() - 1);
-            if (result.hasTargets()) {
-                for (var target : result.getTargets()) {
-                    if (target.getFiducialId() == lockedSpeakerId) {
-
-                        targetYaw = target.getYaw();
-                        targetRange =
-                                PhotonUtils.calculateDistanceToTargetMeters(
-                                        VisionConstants.CAMERA_HEIGHT_METERS, // Measured with a tape measure, or in CAD.
-                                        VisionConstants.TARGET_HEIGHT_METERS, // From 2024 game manual for ID 7
-                                        Units.degreesToRadians(VisionConstants.CAMERA_PITCH_DEGREES), // Measured with a protractor, or in CAD.
-                                        Units.degreesToRadians(target.getPitch()));
-
-                        targetVisible = true;
-                    }
-                }
-            }
-        }
-
-        if (targetVisible) {
-            double rotationVal =
-                    (VisionConstants.VISION_DES_ANGLE_DEGREES - targetYaw)
-						* VisionConstants.VISION_TURN_P;
-            double translationVal =
-                    (VisionConstants.VISION_DES_RANGE_METERS - targetRange)
-						* VisionConstants.VISION_STRAFE_P;
-		
-			drive(
-				new Translation2d(translationVal, 0)
-					.times(Constants.Swerve.MAX_SPEED_METERS),
-				rotationVal * Constants.Swerve.MAX_ANGULAR_VELOCITY,
-				false,
-				true
-			);
-		}
-	}
-
-    public void drive(Translation2d translation, double rotation, boolean fieldRelative, boolean isOpenLoop) {
+    public void drive(Translation2d translation, double rotation, boolean fieldRelative) {
         ChassisSpeeds speeds = new ChassisSpeeds(translation.getX(), translation.getY(), rotation);
 
 		if (fieldRelative) {
 			speeds = ChassisSpeeds.fromFieldRelativeSpeeds(speeds, getHeading());
 		}
 
-		SwerveModuleState[] swerveModuleStates = Constants.Swerve.SWERVE_DRIVE_KINEMATICS.toSwerveModuleStates(speeds);
-        SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, Constants.Swerve.MAX_SPEED_METERS);
+		SwerveModuleState[] swerveModuleStates = DriveConstants.DRIVE_KINEMATICS.toSwerveModuleStates(speeds);
+        SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, DriveConstants.MAX_SPEED_METERS_PER_SECOND);
 
-        flModule.setDesiredState(swerveModuleStates[0], isOpenLoop);
-        frModule.setDesiredState(swerveModuleStates[1], isOpenLoop);
-        blModule.setDesiredState(swerveModuleStates[2], isOpenLoop);
-        brModule.setDesiredState(swerveModuleStates[(2 + 1)], isOpenLoop);
+        flModule.setDesiredState(swerveModuleStates[0]);
+        frModule.setDesiredState(swerveModuleStates[1]);
+        blModule.setDesiredState(swerveModuleStates[2]);
+        brModule.setDesiredState(swerveModuleStates[(2 + 1)]);
 
 	}
 
     public void setModuleStates(SwerveModuleState[] desiredStates) {
-        SwerveDriveKinematics.desaturateWheelSpeeds(desiredStates, Constants.Swerve.MAX_SPEED_METERS);
+        SwerveDriveKinematics.desaturateWheelSpeeds(desiredStates, DriveConstants.MAX_SPEED_METERS_PER_SECOND);
 
-        flModule.setDesiredState(desiredStates[0], false);
-        frModule.setDesiredState(desiredStates[1], false);
-        blModule.setDesiredState(desiredStates[2], false);
-        brModule.setDesiredState(desiredStates[(2 + 1)], false);
+        flModule.setDesiredState(desiredStates[0]);
+        frModule.setDesiredState(desiredStates[1]);
+        blModule.setDesiredState(desiredStates[2]);
+        brModule.setDesiredState(desiredStates[(2 + 1)]);
     }
 
     public SwerveModuleState[] getModuleStates() {
@@ -312,11 +224,6 @@ public class DriveFSMSystem {
 		states[(2 + 1)] = brModule.getState();
 
         return states;
-    }
-
-    public ChassisSpeeds getMeasuredSpeeds() {
-        return Constants.Swerve.SWERVE_DRIVE_KINEMATICS
-			.toChassisSpeeds(getModuleStates());
     }
 
     public SwerveModulePosition[] getModulePositions() {
@@ -336,23 +243,31 @@ public class DriveFSMSystem {
 
     public void setPose(Pose2d pose) {
         swerveDrivePoseEstimator.resetPosition(
-			getGyroYaw(), getModulePositions(), pose
+			getHeading(), getModulePositions(), pose
 		);
     }
 
-    public Rotation2d getGyroYaw() {
-        return new Rotation2d(gyro.getYaw().getValue());
-    }
+	public void resetOdometry(Pose2d pose) {
+		swerveDrivePoseEstimator.resetPosition(
+			Rotation2d.fromDegrees(getHeading().getDegrees()),
+			new SwerveModulePosition[] {
+				flModule.getPosition(),
+				frModule.getPosition(),
+				blModule.getPosition(),
+				brModule.getPosition()
+			},
+			pose);
+	  }
 
-    public void resetModulesToAbsolute() {
-        flModule.resetToAbsolute();
-        frModule.resetToAbsolute();
-        blModule.resetToAbsolute();
-        brModule.resetToAbsolute();        
-    }
+	public void resetEncoders() {
+		flModule.resetEncoders();
+		blModule.resetEncoders();
+		frModule.resetEncoders();
+		brModule.resetEncoders();
+	}
 
 	public Rotation2d getHeading() {
-        return getPose().getRotation();
+        return gyro.getRotation2d();
     }
 
     public void setHeading(Rotation2d heading) {

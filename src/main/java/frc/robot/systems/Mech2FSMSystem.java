@@ -35,8 +35,8 @@ public class Mech2FSMSystem {
 	 */
 	public Mech2FSMSystem() {
 		// Perform hardware init
-		exampleMotor = new SparkMax(HardwareMap.CAN_ID_SPARK_SHOOTER,
-										SparkMax.MotorType.kBrushless);
+		// exampleMotor = new SparkMax(HardwareMap.CAN_ID_SPARK_SHOOTER,
+		// 								SparkMax.MotorType.kBrushless);
 
 		// Reset state machine
 		reset();
@@ -139,7 +139,7 @@ public class Mech2FSMSystem {
 	 *        the robot is in autonomous mode.
 	 */
 	private void handleStartState(TeleopInput input) {
-		exampleMotor.set(0);
+		//exampleMotor.set(0);
 	}
 	/**
 	 * Handle behavior in OTHER_STATE.
@@ -147,7 +147,7 @@ public class Mech2FSMSystem {
 	 *        the robot is in autonomous mode.
 	 */
 	private void handleOtherState(TeleopInput input) {
-		exampleMotor.set(MOTOR_RUN_POWER);
+		//exampleMotor.set(MOTOR_RUN_POWER);
 	}
 
 	/**

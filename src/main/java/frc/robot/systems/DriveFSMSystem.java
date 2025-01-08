@@ -1,5 +1,6 @@
 package frc.robot.systems;
 
+import edu.wpi.first.epilogue.Logged;
 // WPILib Imports
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
@@ -10,7 +11,10 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.wpilibj.SPI;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 // CTRE Imports
 
@@ -25,6 +29,7 @@ import frc.robot.HardwareMap;
 import frc.robot.systems.AutoHandlerSystem.AutoFSMState;
 import frc.robot.SwerveModule;
 
+@Logged
 public class DriveFSMSystem {
 	/* ======================== Constants ======================== */
 	// FSM state definitions
@@ -45,6 +50,8 @@ public class DriveFSMSystem {
 	public SwerveModule blModule;
 	
 	private AHRS gyro = new AHRS(SPI.Port.kMXP);
+
+	private final StructArrayPublisher<SwerveModuleState> statePublisher;
 
 	/* ======================== Constructor ======================== */
 	/**
@@ -87,6 +94,9 @@ public class DriveFSMSystem {
 			getModulePositions(),
 			new Pose2d()
 		);
+
+		statePublisher = NetworkTableInstance.getDefault()
+      		.getStructArrayTopic("/SwerveStates", SwerveModuleState.struct).publish();
 
 		// Reset state machine
 		reset();
@@ -174,7 +184,10 @@ public class DriveFSMSystem {
 	 *        the robot is in autonomous mode.
 	 */
 	private void handleTeleOpState(TeleopInput input) {
-		
+		if (input == null) {
+			return;
+		}
+
 		double translationVal = -MathUtil.applyDeadband(
 			input.getDriveLeftJoystickY(), OIConstants.DRIVE_DEADBAND);
 		double strafeVal = -MathUtil.applyDeadband(
@@ -197,6 +210,10 @@ public class DriveFSMSystem {
 	}
 
     public void drive(Translation2d translation, double rotation, boolean fieldRelative) {
+		SmartDashboard.putNumber("Translation X", translation.getX());
+		SmartDashboard.putNumber("Translation Y", translation.getY());
+		SmartDashboard.putNumber("Rotation", rotation);
+
         ChassisSpeeds speeds = new ChassisSpeeds(translation.getX(), translation.getY(), rotation);
 
 		if (fieldRelative) {
@@ -205,6 +222,8 @@ public class DriveFSMSystem {
 
 		SwerveModuleState[] swerveModuleStates = DriveConstants.DRIVE_KINEMATICS.toSwerveModuleStates(speeds);
         SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, DriveConstants.MAX_SPEED_METERS_PER_SECOND);
+
+		statePublisher.set(swerveModuleStates);
 
         flModule.setDesiredState(swerveModuleStates[0]);
         frModule.setDesiredState(swerveModuleStates[1]);

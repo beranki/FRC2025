@@ -37,7 +37,6 @@ public class DriveFSMSystem {
 	// Hardware devices should be owned by one and only one system. They must
 	// be private to their owner system and may not be used elsewhere.
 	private final SwerveDrive swerveDrive;
-
 	private int lockedSpeakerId;
 
 	/* ======================== Constructor ======================== */
@@ -46,7 +45,7 @@ public class DriveFSMSystem {
 	 * one-time initialization or configuration of hardware required. Note
 	 * the constructor is called only once when the robot boots.
 	 */
-	public DriveFSMSystem(File directory) {
+	public DriveFSMSystem(File directory, boolean isSimulation) {
 		// Perform hardware init
 		SwerveDriveTelemetry.verbosity = TelemetryVerbosity.HIGH;
 		
@@ -57,8 +56,10 @@ public class DriveFSMSystem {
 					Rotation2d.fromDegrees(0)));
 			
 			// setting customizations for swerve drive
-			swerveDrive.setHeadingCorrection(false); 
-			swerveDrive.setCosineCompensator(true);
+			swerveDrive.setHeadingCorrection(false);
+
+			swerveDrive.setCosineCompensator(!isSimulation); // This shouldn't be turned on in simulation
+
 			swerveDrive.setAngularVelocityCompensation(true,
 														true,
 														0.1);
@@ -163,14 +164,15 @@ public class DriveFSMSystem {
 	 *        the robot is in autonomous mode.
 	 */
 	private void handleTeleOpState(TeleopInput input) {
-		
+		if(input == null) return;
+
 		double translationVal = MathUtil.applyDeadband(
 			input.getDriveLeftJoystickY(), OperatorConstants.LEFT_Y_DEADBAND)
 			* swerveDrive.getMaximumChassisVelocity();
 		double strafeVal = MathUtil.applyDeadband(
 			input.getDriveLeftJoystickX(), OperatorConstants.LEFT_X_DEADBAND)
 			* swerveDrive.getMaximumChassisVelocity();
-		double rotationVal = MathUtil.applyDeadband(
+		double rotationVal = -MathUtil.applyDeadband(
 			input.getDriveRightJoystickX(), OperatorConstants.RIGHT_X_DEADBAND)
 			* swerveDrive.getMaximumChassisAngularVelocity();
 		
@@ -216,5 +218,13 @@ public class DriveFSMSystem {
 
 	private boolean handleAutoState3() {
 		return true;
+	}
+
+	/**
+	 * Get the simulated MapleSim Pose
+	 * @return The simulated MapleSim pose of the robot if mapleSimDrive exists, else returns null
+	 */
+	public Pose2d getMapleSimSimulatedPose() {
+		return swerveDrive.getMapleSimDrive().map(sim -> sim.getSimulatedDriveTrainPose()).orElse(null);
 	}
 }

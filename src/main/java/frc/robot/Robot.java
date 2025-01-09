@@ -11,10 +11,6 @@ import edu.wpi.first.wpilibj.TimedRobot;
 
 // Systems
 import frc.robot.systems.DriveFSMSystem;
-import frc.robot.systems.Mech1FSMSystem;
-import frc.robot.systems.Mech2FSMSystem;
-import frc.robot.systems.AutoHandlerSystem;
-import frc.robot.systems.AutoHandlerSystem.AutoPath;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -41,7 +37,8 @@ public class Robot extends TimedRobot {
 
 		// Instantiate all systems here
 		if (HardwareMap.isDriveHardwarePresent()) {
-			driveSystem = new DriveFSMSystem(new File(Filesystem.getDeployDirectory(), "swerve"));
+			driveSystem = new DriveFSMSystem(new File(Filesystem.getDeployDirectory(),
+			"swerve/mk4n"));
 		}
 
 		// if (HardwareMap.isMech1HardwarePresent()) {

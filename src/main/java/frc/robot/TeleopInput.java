@@ -37,7 +37,7 @@ public class TeleopInput {
 	// control mapping is hidden from other classes.
 
 	/* ------------------------ Drive Controller ------------------------ */
-	
+
 	/**
 	 * Get X axis of Right Joystick.
 	 * @return Axis value
@@ -79,7 +79,7 @@ public class TeleopInput {
 	}
 
 	/* ------------------------ Mech Controller ------------------------ */
-	
+
 	/**
 	 * Get X axis of Left Joystick.
 	 * @return Axis value

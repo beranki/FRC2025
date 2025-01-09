@@ -5,16 +5,13 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
-import static edu.wpi.first.units.Units.Meter;
 
 // Third party Hardware Imports
-import com.studica.frc.AHRS;
 
 // Robot Imports
 import frc.robot.TeleopInput;
 import frc.robot.constants.Constants;
 import frc.robot.constants.Constants.OperatorConstants;
-import frc.robot.constants.Constants.SwerveConstants;
 import frc.robot.systems.AutoHandlerSystem.AutoFSMState;
 import swervelib.SwerveDrive;
 import swervelib.parser.SwerveParser;
@@ -51,13 +48,12 @@ public class DriveFSMSystem {
 		// Perform hardware init
 		SwerveDriveTelemetry.verbosity = TelemetryVerbosity.HIGH;
 
-
 		try {
 			swerveDrive = new SwerveParser(directory).createSwerveDrive(Constants.MAX_SPEED, 0, 0);
 
 			// setting customizations for swerve drive
 			swerveDrive.setHeadingCorrection(true);
-			swerveDrive.setCosineCompensator(true);
+			swerveDrive.setCosineCompensator(!isSimulation);
 			// swerveDrive.setAngularVelocityCompensation(true,
 			// 											true,
 			// 											Constants.ANGLE_VELO_COEFF);

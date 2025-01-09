@@ -19,6 +19,7 @@ import swervelib.telemetry.SwerveDriveTelemetry.TelemetryVerbosity;
 import frc.robot.TeleopInput;
 import frc.robot.constants.Constants;
 import frc.robot.constants.Constants.OperatorConstants;
+import frc.robot.constants.Constants.SwerveConstants;
 import frc.robot.systems.AutoHandlerSystem.AutoFSMState;
 
 //Java Imports
@@ -44,35 +45,40 @@ public class DriveFSMSystem {
 	 * Create DriveFSMSystem and initialize to starting state. Also perform any
 	 * one-time initialization or configuration of hardware required. Note
 	 * the constructor is called only once when the robot boots.
+	 * @param directory directory for swerve module jsons
+	 * @param isSimulation if the robot is simulated or is the real robot
 	 */
 	public DriveFSMSystem(File directory, boolean isSimulation) {
 		// Perform hardware init
 		SwerveDriveTelemetry.verbosity = TelemetryVerbosity.HIGH;
-		
+
 		try {
 			swerveDrive = new SwerveParser(directory).createSwerveDrive(Constants.MAX_SPEED,
 					new Pose2d(new Translation2d(Meter.of(1),
-								Meter.of(4)),
+								Meter.of(2 + 2)),
 					Rotation2d.fromDegrees(0)));
-			
+
 			// setting customizations for swerve drive
 			swerveDrive.setHeadingCorrection(false);
 
-			swerveDrive.setCosineCompensator(!isSimulation); // This shouldn't be turned on in simulation
+			// This shouldn't be turned on in simulation.
+			// -- see https://docs.yagsl.com/overview/our-features/simulation#how-do-i-enable-it
+
+			swerveDrive.setCosineCompensator(!isSimulation);
 
 			swerveDrive.setAngularVelocityCompensation(true,
 														true,
-														0.1);
+													SwerveConstants.ANGULAR_VELOCITY_COEFFICIENT);
 			swerveDrive.setModuleEncoderAutoSynchronize(false,
 														1);
-			swerveDrive.pushOffsetsToEncoders(); 
+			swerveDrive.pushOffsetsToEncoders();
 
 			swerveDrive.stopOdometryThread(); // need to update odometry manually on main thread.
 
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
-		
+
 		// Reset state machine
 		reset();
 	}
@@ -164,7 +170,9 @@ public class DriveFSMSystem {
 	 *        the robot is in autonomous mode.
 	 */
 	private void handleTeleOpState(TeleopInput input) {
-		if(input == null) return;
+		if (input == null) {
+			return;
+		}
 
 		double translationVal = MathUtil.applyDeadband(
 			input.getDriveLeftJoystickY(), OperatorConstants.LEFT_Y_DEADBAND)
@@ -175,7 +183,7 @@ public class DriveFSMSystem {
 		double rotationVal = -MathUtil.applyDeadband(
 			input.getDriveRightJoystickX(), OperatorConstants.RIGHT_X_DEADBAND)
 			* swerveDrive.getMaximumChassisAngularVelocity();
-		
+
 		swerveDrive.drive(
 			new Translation2d(translationVal, strafeVal),
 			rotationVal,
@@ -184,30 +192,53 @@ public class DriveFSMSystem {
 		);
 	}
 
-    public void resetOdometry(Pose2d pose) {
+	/**
+	 * Resets the Odometry of the robot to a given pose.
+	 * @param pose pose to reset
+	 */
+	public void resetOdometry(Pose2d pose) {
 		swerveDrive.resetOdometry(pose);
 	}
 
+	/**
+	 * Gets the current robot pose.
+	 * @return the current robot pose
+	 */
 	public Pose2d getPose() {
 		return swerveDrive.getPose();
 	}
 
+	/**
+	 * Zeros the gyro.
+	 */
 	public void zeroGyro() {
 		swerveDrive.zeroGyro();
 	}
 
-    public void setMotorBrake(boolean brake) {
+	/**
+	 * Sets the motor into brake mode.
+	 * @param brake should the motor be set into brake mode
+	 */
+	public void setMotorBrake(boolean brake) {
 		swerveDrive.setMotorIdleMode(brake);
-    }
-
-	public Rotation2d getHeading() {
-        return getPose().getRotation();
-    }
-
-	public Rotation2d getPitch() {
-	  return swerveDrive.getPitch();
 	}
-  
+
+	/**
+	 * Gets the current heading.
+	 * @return the current heading.
+	 */
+	public Rotation2d getHeading() {
+		return getPose().getRotation();
+	}
+
+	/**
+	 * Gets the pitch of the robot.
+	 * @return the pitch of the robot
+	 */
+	public Rotation2d getPitch() {
+		return swerveDrive.getPitch();
+	}
+
 	private boolean handleAutoState1() {
 		return true;
 	}
@@ -221,10 +252,11 @@ public class DriveFSMSystem {
 	}
 
 	/**
-	 * Get the simulated MapleSim Pose
+	 * Get the simulated MapleSim Pose.
 	 * @return The simulated MapleSim pose of the robot if mapleSimDrive exists, else returns null
 	 */
 	public Pose2d getMapleSimSimulatedPose() {
-		return swerveDrive.getMapleSimDrive().map(sim -> sim.getSimulatedDriveTrainPose()).orElse(null);
+		return swerveDrive.getMapleSimDrive().map(
+			sim -> sim.getSimulatedDriveTrainPose()).orElse(null);
 	}
 }

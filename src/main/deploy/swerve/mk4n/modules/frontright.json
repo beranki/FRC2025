@@ -1,17 +1,17 @@
 {
   "location": {
-    "front": -14,
-    "left": -14
+    "front": 14,
+    "left": 14
   },
-  "absoluteEncoderOffset": 0.019287109375,
+  "absoluteEncoderOffset": 0.397461,
   "drive": {
     "type": "krakenx60",
-    "id": 5,
+    "id": 3,
     "canbus": "Drivetrain"
   },
   "angle": {
     "type": "krakenx60",
-    "id": 6,
+    "id": 4,
     "canbus": "Drivetrain"
   },
   "inverted": {
@@ -20,7 +20,7 @@
   },
   "encoder": {
     "type": "cancoder",
-    "id": 11,
+    "id": 10,
     "canbus": "Drivetrain"
   },
   "absoluteEncoderInverted": false

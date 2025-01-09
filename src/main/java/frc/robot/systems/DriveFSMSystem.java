@@ -8,12 +8,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import static edu.wpi.first.units.Units.Meter;
 
 // Third party Hardware Imports
-
-// YAGSL Imports
-import swervelib.SwerveDrive;
-import swervelib.parser.SwerveParser;
-import swervelib.telemetry.SwerveDriveTelemetry;
-import swervelib.telemetry.SwerveDriveTelemetry.TelemetryVerbosity;
+import com.studica.frc.AHRS;
 
 // Robot Imports
 import frc.robot.TeleopInput;
@@ -21,6 +16,10 @@ import frc.robot.constants.Constants;
 import frc.robot.constants.Constants.OperatorConstants;
 import frc.robot.constants.Constants.SwerveConstants;
 import frc.robot.systems.AutoHandlerSystem.AutoFSMState;
+import swervelib.SwerveDrive;
+import swervelib.parser.SwerveParser;
+import swervelib.telemetry.SwerveDriveTelemetry;
+import swervelib.telemetry.SwerveDriveTelemetry.TelemetryVerbosity;
 
 //Java Imports
 import java.io.File;
@@ -52,23 +51,16 @@ public class DriveFSMSystem {
 		// Perform hardware init
 		SwerveDriveTelemetry.verbosity = TelemetryVerbosity.HIGH;
 
+
 		try {
-			swerveDrive = new SwerveParser(directory).createSwerveDrive(Constants.MAX_SPEED,
-					new Pose2d(new Translation2d(Meter.of(1),
-								Meter.of(2 + 2)),
-					Rotation2d.fromDegrees(0)));
+			swerveDrive = new SwerveParser(directory).createSwerveDrive(Constants.MAX_SPEED, 0, 0);
 
 			// setting customizations for swerve drive
-			swerveDrive.setHeadingCorrection(false);
-
-			// This shouldn't be turned on in simulation.
-			// -- see https://docs.yagsl.com/overview/our-features/simulation#how-do-i-enable-it
-
-			swerveDrive.setCosineCompensator(!isSimulation);
-
-			swerveDrive.setAngularVelocityCompensation(true,
-														true,
-													SwerveConstants.ANGULAR_VELOCITY_COEFFICIENT);
+			swerveDrive.setHeadingCorrection(true);
+			swerveDrive.setCosineCompensator(true);
+			// swerveDrive.setAngularVelocityCompensation(true,
+			// 											true,
+			// 											Constants.ANGLE_VELO_COEFF);
 			swerveDrive.setModuleEncoderAutoSynchronize(false,
 														1);
 			swerveDrive.pushOffsetsToEncoders();
@@ -78,6 +70,7 @@ public class DriveFSMSystem {
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+
 
 		// Reset state machine
 		reset();
@@ -184,56 +177,57 @@ public class DriveFSMSystem {
 			input.getDriveRightJoystickX(), OperatorConstants.RIGHT_X_DEADBAND)
 			* swerveDrive.getMaximumChassisAngularVelocity();
 
+
 		swerveDrive.drive(
-			new Translation2d(translationVal, strafeVal),
-			rotationVal,
+			new Translation2d(-translationVal, -strafeVal),
+			-rotationVal,
 			true,
 			false
 		);
 	}
 
 	/**
-	 * Resets the Odometry of the robot to a given pose.
-	 * @param pose pose to reset
+	 * Resets the odometry to the specified pose.
+	 * @param pose The pose to reset the odometry to.
 	 */
 	public void resetOdometry(Pose2d pose) {
 		swerveDrive.resetOdometry(pose);
 	}
 
 	/**
-	 * Gets the current robot pose.
-	 * @return the current robot pose
+	 * Get the current pose of the robot.
+	 * @return The current pose as a Pose2d object.
 	 */
 	public Pose2d getPose() {
 		return swerveDrive.getPose();
 	}
 
 	/**
-	 * Zeros the gyro.
+	 * Zero the gyro of the swerve drive.
 	 */
 	public void zeroGyro() {
 		swerveDrive.zeroGyro();
 	}
 
 	/**
-	 * Sets the motor into brake mode.
-	 * @param brake should the motor be set into brake mode
+	 * Set the motor brake mode.
+	 * @param brake True to enable brake mode, false to disable.
 	 */
 	public void setMotorBrake(boolean brake) {
 		swerveDrive.setMotorIdleMode(brake);
 	}
 
 	/**
-	 * Gets the current heading.
-	 * @return the current heading.
+	 * Get the current heading of the robot.
+	 * @return The current heading as a Rotation2d object.
 	 */
 	public Rotation2d getHeading() {
 		return getPose().getRotation();
 	}
 
 	/**
-	 * Gets the pitch of the robot.
-	 * @return the pitch of the robot
+	 * Get the pitch of the robot.
+	 * @return The current pitch as a Rotation2d object.
 	 */
 	public Rotation2d getPitch() {
 		return swerveDrive.getPitch();

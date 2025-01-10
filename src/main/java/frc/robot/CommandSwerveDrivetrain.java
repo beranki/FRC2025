@@ -6,6 +6,7 @@ import com.ctre.phoenix6.swerve.SwerveDrivetrain;
 import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.swerve.SwerveRequest;
+import com.pathplanner.lib.auto.AutoBuilder;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -44,6 +45,37 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain {
 				);
 				m_hasAppliedOperatorPerspective = true;
 			});
+		}
+	}
+
+	public void setupPathplanner() {
+		double driveBaseRadius = 0;
+		for (var moduleLocation : getModuleLocations()) {
+			driveBaseRadius = Math.max(driveBaseRadius, moduleLocation.getNorm());
+		}
+
+		AutoBuilder.configureHolonomic(
+			()->this.getState().Pose, // Supplier of current robot pose
+			this::seedFieldRelative,  // Consumer for seeding pose against auto
+			this::getCurrentRobotChassisSpeeds,
+			(speeds)->this.setControl(autoRequest.withSpeeds(speeds)), // Consumer of ChassisSpeeds to drive the robot
+			new HolonomicPathFollowerConfig(new PIDConstants(10, 0, 0),
+											new PIDConstants(10, 0, 0),
+											TunerConstants.kSpeedAt12VoltsMps,
+											driveBaseRadius,
+											new ReplanningConfig()),
+			() -> {
+					// Boolean supplier that controls when the path will be mirrored for the red alliance
+					// This will flip the path being followed to the red side of the field during auto only.
+					// THE ORIGIN WILL REMAIN ON THE BLUE SIDE
+
+					var alliance = DriverStation.getAlliance();
+					if (alliance.isPresent()) {
+						return alliance.get() == DriverStation.Alliance.Red & !DriverStation.isTeleop();
+					}
+					return false;
+			},
+			this); // Subsystem for requirements
 		}
 	}
 

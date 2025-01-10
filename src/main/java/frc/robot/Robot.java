@@ -8,10 +8,10 @@ import edu.wpi.first.wpilibj.TimedRobot;
 
 // Systems
 import frc.robot.systems.DriveFSMSystem;
-import frc.robot.systems.Mech1FSMSystem;
-import frc.robot.systems.Mech2FSMSystem;
-import frc.robot.systems.AutoHandlerSystem;
-import frc.robot.systems.AutoHandlerSystem.AutoPath;
+// import frc.robot.systems.Mech1FSMSystem;
+// import frc.robot.systems.Mech2FSMSystem;
+// import frc.robot.systems.AutoHandlerSystem;
+// import frc.robot.systems.AutoHandlerSystem.AutoPath;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -22,10 +22,10 @@ public class Robot extends TimedRobot {
 
 	// Systems
 	private DriveFSMSystem driveSystem;
-	private Mech1FSMSystem mech1System;
-	private Mech2FSMSystem mech2System;
+	// private Mech1FSMSystem mech1System;
+	// private Mech2FSMSystem mech2System;
 
-	private AutoHandlerSystem autoHandler;
+	// private AutoHandlerSystem autoHandler;
 
 	/**
 	 * This function is run when the robot is first started up and should be used for any
@@ -41,40 +41,40 @@ public class Robot extends TimedRobot {
 			driveSystem = new DriveFSMSystem();
 		}
 
-		if (HardwareMap.isMech1HardwarePresent()) {
-			mech1System = new Mech1FSMSystem();
-		}
+	// 	if (HardwareMap.isMech1HardwarePresent()) {
+	// 		mech1System = new Mech1FSMSystem();
+	// 	}
 
-		if (HardwareMap.isMech2HardwarePresent()) {
-			mech2System = new Mech2FSMSystem();
-		}
-		autoHandler = new AutoHandlerSystem(driveSystem, mech1System, mech2System);
+	// 	if (HardwareMap.isMech2HardwarePresent()) {
+	// 		mech2System = new Mech2FSMSystem();
+	// 	}
+	// 	autoHandler = new AutoHandlerSystem(driveSystem, mech1System, mech2System);
 	}
 
 	@Override
 	public void autonomousInit() {
 		System.out.println("-------- Autonomous Init --------");
-		autoHandler.reset(AutoPath.PATH1);
+		// autoHandler.reset(AutoPath.PATH1);
 	}
 
 	@Override
 	public void autonomousPeriodic() {
-		autoHandler.update();
+		// autoHandler.update();
 	}
 
 	@Override
 	public void teleopInit() {
 		System.out.println("-------- Teleop Init --------");
 		driveSystem.reset();
-		mech1System.reset();
-		mech2System.reset();
+		// mech1System.reset();
+		// mech2System.reset();
 	}
 
 	@Override
 	public void teleopPeriodic() {
 		driveSystem.update(input);
-		mech1System.update(input);
-		mech2System.update(input);
+		// mech1System.update(input);
+		// mech2System.update(input);
 	}
 
 	@Override

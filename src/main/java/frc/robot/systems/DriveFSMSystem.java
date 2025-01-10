@@ -1,5 +1,6 @@
 package frc.robot.systems;
 
+import edu.wpi.first.math.MathUtil;
 // WPILib Imports
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -16,6 +17,7 @@ import com.revrobotics.spark.SparkMax;
 
 // Robot Imports
 import frc.robot.TeleopInput;
+import frc.robot.constants.DriveConstants;
 import frc.robot.constants.TunerConstants;
 import frc.robot.HardwareMap;
 import frc.robot.SwerveLogging;
@@ -93,6 +95,10 @@ public class DriveFSMSystem {
 	 *        the robot is in autonomous mode.
 	 */
 	public void update(TeleopInput input) {
+		if (input == null) {
+			return;
+		}
+
 		switch (currentState) {
 			case TELEOP_STATE:
 				handleTeleOpState(input);
@@ -133,12 +139,10 @@ public class DriveFSMSystem {
 	 * @return FSM state for the next iteration
 	 */
 	private FSMState nextState(TeleopInput input) {
-		
+
 		switch (currentState) {
 			case TELEOP_STATE:
 				if (input != null) {
-					return null;
-				} else {
 					return FSMState.TELEOP_STATE;
 				}
 
@@ -155,11 +159,20 @@ public class DriveFSMSystem {
 	 */
 	private void handleTeleOpState(TeleopInput input) {
 		logger.applyStateLogging(drivetrain.getState());
-		
+		drivetrain.applyOperatorPerspective();
+
 		drivetrain.setControl(
-			drive.withVelocityX(-input.getDriveLeftJoystickY() * MAX_SPEED) // Drive forward with negative Y (forward)
-			.withVelocityY(-input.getDriveLeftJoystickX() * MAX_SPEED) // Drive left with negative X (left)
-			.withRotationalRate(-input.getDriveRightJoystickX() * MAX_ANGULAR_RATE) // Drive counterclockwise with negative X (left)
+			drive.withVelocityX(-MathUtil.applyDeadband(
+				input.getDriveLeftJoystickY(), DriveConstants.DRIVE_DEADBAND
+				) * MAX_SPEED) // Drive forward with negative Y (forward)
+			.withVelocityY(
+				-MathUtil.applyDeadband(
+					input.getDriveLeftJoystickX(), DriveConstants.DRIVE_DEADBAND
+					) * MAX_SPEED) // Drive left with negative X (left)
+			.withRotationalRate(
+				-MathUtil.applyDeadband(
+					input.getDriveRightJoystickX(), DriveConstants.DRIVE_DEADBAND
+					) * MAX_ANGULAR_RATE) // Drive counterclockwise with negative X (left)
 		);
 
 		if (input.getDriveTriangleButton()) {

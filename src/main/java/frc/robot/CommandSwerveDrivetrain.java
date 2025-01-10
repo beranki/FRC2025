@@ -17,39 +17,39 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
  */
 public class CommandSwerveDrivetrain extends SwerveDrivetrain {
 
-    /* Blue alliance sees forward as 0 degrees (toward red alliance wall) */
-    private static final Rotation2d kBlueAlliancePerspectiveRotation = Rotation2d.kZero;
-    /* Red alliance sees forward as 180 degrees (toward blue alliance wall) */
-    private static final Rotation2d kRedAlliancePerspectiveRotation = Rotation2d.k180deg;
-    /* Keep track if we've ever applied the operator perspective before or not */
-    private boolean m_hasAppliedOperatorPerspective = false;
-    
-    public CommandSwerveDrivetrain(
-        SwerveDrivetrainConstants drivetrainConstants,
-        SwerveModuleConstants<?, ?, ?>... modules
-    ) {
-        super(
-            TalonFX::new, TalonFX::new, CANcoder::new,
-            drivetrainConstants, modules
-        );
-    }
+	/* Blue alliance sees forward as 0 degrees (toward red alliance wall) */
+	private static final Rotation2d kBlueAlliancePerspectiveRotation = Rotation2d.k180deg;
+	/* Red alliance sees forward as 180 degrees (toward blue alliance wall) */
+	private static final Rotation2d kRedAlliancePerspectiveRotation = Rotation2d.kZero;
+	/* Keep track if we've ever applied the operator perspective before or not */
+	private boolean m_hasAppliedOperatorPerspective = false;
 
-    public void applyOperatorPerspective() {
-        if (!m_hasAppliedOperatorPerspective || DriverStation.isDisabled()) {
-            DriverStation.getAlliance().ifPresent(allianceColor -> {
-                setOperatorPerspectiveForward(
-                    allianceColor == Alliance.Red
-                        ? kRedAlliancePerspectiveRotation
-                        : kBlueAlliancePerspectiveRotation
-                );
-                m_hasAppliedOperatorPerspective = true;
-            });
-        }
-    }
+	public CommandSwerveDrivetrain(
+		SwerveDrivetrainConstants drivetrainConstants,
+		SwerveModuleConstants<?, ?, ?>... modules
+	) {
+		super(
+			TalonFX::new, TalonFX::new, CANcoder::new,
+			drivetrainConstants, modules
+		);
+	}
 
-    // @Override
-    // public void simulationPeriodic() {
-    //     /* Assume 20ms update rate, get battery voltage from WPILib */
-    //     updateSimState(0.02, RobotController.getBatteryVoltage());
-    // }
+	public void applyOperatorPerspective() {
+		if (!m_hasAppliedOperatorPerspective || DriverStation.isDisabled()) {
+			DriverStation.getAlliance().ifPresent(allianceColor -> {
+				setOperatorPerspectiveForward(
+					allianceColor == Alliance.Red
+						? kRedAlliancePerspectiveRotation
+						: kBlueAlliancePerspectiveRotation
+				);
+				m_hasAppliedOperatorPerspective = true;
+			});
+		}
+	}
+
+	// @Override
+	// public void simulationPeriodic() {
+	//     /* Assume 20ms update rate, get battery voltage from WPILib */
+	//     updateSimState(0.02, RobotController.getBatteryVoltage());
+	// }
 }

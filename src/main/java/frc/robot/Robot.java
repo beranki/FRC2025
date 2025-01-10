@@ -4,8 +4,14 @@
 package frc.robot;
 
 
+import choreo.auto.AutoChooser;
+import choreo.auto.AutoFactory;
 // WPILib Imports
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.constants.TunerConstants;
 // Systems
 import frc.robot.systems.DriveFSMSystem;
 // import frc.robot.systems.Mech1FSMSystem;
@@ -19,9 +25,15 @@ import frc.robot.systems.DriveFSMSystem;
  */
 public class Robot extends TimedRobot {
 	private TeleopInput input;
+	private TunerConstants constants;
 
 	// Systems
 	private DriveFSMSystem driveSystem;
+	private CommandSwerveDrivetrain swerveDrivetrain;
+	private AutoFactory autoFactory;
+	private AutoRoutines autoRoutines;
+	private AutoChooser autoChooser = new AutoChooser();
+	private Command autCommand;
 	// private Mech1FSMSystem mech1System;
 	// private Mech2FSMSystem mech2System;
 
@@ -41,6 +53,11 @@ public class Robot extends TimedRobot {
 		if (HardwareMap.isDriveHardwarePresent()) {
 			driveSystem = new DriveFSMSystem();
 		}
+		autoFactory = driveSystem.createAutoFactory();
+		autoRoutines = new AutoRoutines(autoFactory);
+
+		autoChooser.addRoutine("testPath", autoRoutines::testAuto);
+		SmartDashboard.putData("AUTO CHOOSER", autoChooser);
 
 	// 	if (HardwareMap.isMech1HardwarePresent()) {
 	// 		mech1System = new Mech1FSMSystem();
@@ -50,17 +67,25 @@ public class Robot extends TimedRobot {
 	// 		mech2System = new Mech2FSMSystem();
 	// 	}
 	// 	autoHandler = new AutoHandlerSystem(driveSystem, mech1System, mech2System);
+
+
 	}
 
 	@Override
 	public void autonomousInit() {
 		System.out.println("-------- Autonomous Init --------");
 		// autoHandler.reset(AutoPath.PATH1);
+		autCommand = getAutonomousCommand();
+
+		if (autCommand != null) {
+			autCommand.schedule();
+		}
 	}
 
 	@Override
 	public void autonomousPeriodic() {
 		// autoHandler.update();
+		CommandScheduler.getInstance().run();
 	}
 
 	@Override
@@ -110,4 +135,13 @@ public class Robot extends TimedRobot {
 	// Do not use robotPeriodic. Use mode specific periodic methods instead.
 	@Override
 	public void robotPeriodic() { }
+
+	/**
+	 * Gets the autonomous command selected by the auto chooser.
+	 *
+	 * @return the selected autonomous command
+	 */
+	public Command getAutonomousCommand() {
+		return autoChooser.selectedCommand();
+	}
 }

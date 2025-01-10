@@ -6,14 +6,15 @@ import com.ctre.phoenix6.swerve.SwerveDrivetrain;
 import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.swerve.SwerveRequest;
-import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.config.RobotConfig;
-import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 
+import choreo.trajectory.SwerveSample;
+
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import frc.robot.constants.DriveConstants;
 
 /**
  * Class that extends the Phoenix SwerveDrivetrain class and implements subsystem
@@ -32,6 +33,13 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain {
 	private final SwerveRequest.ApplyRobotSpeeds pathApplyRobotSpeeds =
 		new SwerveRequest.ApplyRobotSpeeds();
 
+	private final SwerveRequest.ApplyFieldSpeeds pathApplyFieldSpeeds =
+		new SwerveRequest.ApplyFieldSpeeds();
+
+	private final PIDController autoXPid = new PIDController(10, 0, 0);
+	private final PIDController autoYPid = new PIDController(10, 0, 0);
+	private final PIDController autoHeadingPid = new PIDController(7.5, 0, 0);
+
 	/**
 	 * Constructs a CommandSwerveDrivetrain with the specified drivetrain constants and modules.
 	 *
@@ -48,7 +56,7 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain {
 			drivetrainConstants, modules
 		);
 
-		setupPathplanner();
+		// setupPathplanner();
 	}
 
 	/**
@@ -70,36 +78,26 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain {
 	}
 
 	/**
-	 * Sets up the Pathplanner configuration for the swerve drivetrain.
+	 * Follows the given trajectory sample by adjusting the chassis speeds and heading.
+	 *
+	 * @param sample the swerve sample containing the desired trajectory information
 	 */
-	public void setupPathplanner() {
-		double driveBaseRadius = 0;
-		for (var moduleLocation : getModuleLocations()) {
-			driveBaseRadius = Math.max(driveBaseRadius, moduleLocation.getNorm());
-		}
+	public void followTrajectory(SwerveSample sample) {
+		autoHeadingPid.enableContinuousInput(-Math.PI, Math.PI);
 
-		try {
-			var config = RobotConfig.fromGUISettings();
+		Pose2d pose = getState().Pose;
 
-			AutoBuilder.configure(
-				() -> getState().Pose,
-				this::resetPose,
-				() -> getState().Speeds,
-				(speeds, feedforwards) -> setControl(
-					pathApplyRobotSpeeds.withSpeeds(speeds)
-					.withWheelForceFeedforwardsX(feedforwards.robotRelativeForcesXNewtons())
-					.withWheelForceFeedforwardsY(feedforwards.robotRelativeForcesYNewtons())
-				),
-				new PPHolonomicDriveController(
-					DriveConstants.AUTO_TRANSLATION_PID,
-					DriveConstants.AUTO_ROTATION_PID
-				),
-					config,
-				() -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red
-			);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		ChassisSpeeds targspeeds = sample.getChassisSpeeds();
+		targspeeds.vxMetersPerSecond += autoXPid.calculate(pose.getX(), sample.x);
+		targspeeds.vyMetersPerSecond += autoYPid.calculate(pose.getY(), sample.y);
+		targspeeds.omegaRadiansPerSecond += autoHeadingPid.calculate(
+			pose.getRotation().getRadians(), sample.heading);
+
+		setControl(
+			pathApplyFieldSpeeds.withSpeeds(targspeeds)
+			.withWheelForceFeedforwardsX(sample.moduleForcesX())
+			.withWheelForceFeedforwardsY(sample.moduleForcesY())
+		);
 	}
 
 	// @Override

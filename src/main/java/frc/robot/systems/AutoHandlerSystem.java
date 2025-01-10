@@ -104,7 +104,7 @@ public class AutoHandlerSystem {
 		boolean isCurrentStateFinished = true;
 		SmartDashboard.putString("Auto State", getCurrentState().toString());
 
-		isCurrentStateFinished &= driveSystem.updateAutonomous(getCurrentState());
+		// isCurrentStateFinished &= driveSystem.updateAutonomous(getCurrentState());
 		isCurrentStateFinished &= mech1System.updateAutonomous(getCurrentState());
 		isCurrentStateFinished &= mech2System.updateAutonomous(getCurrentState());
 

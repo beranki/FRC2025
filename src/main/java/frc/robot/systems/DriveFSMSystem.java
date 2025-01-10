@@ -1,9 +1,10 @@
 package frc.robot.systems;
 
-import edu.wpi.first.math.MathUtil;
 // WPILib Imports
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
@@ -11,6 +12,9 @@ import static edu.wpi.first.units.Units.RotationsPerSecond;
 
 //CTRE Imports
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
+
+import choreo.auto.AutoFactory;
+
 import com.ctre.phoenix6.swerve.SwerveRequest;
 
 // Robot Imports
@@ -18,10 +22,9 @@ import frc.robot.TeleopInput;
 import frc.robot.constants.DriveConstants;
 import frc.robot.constants.TunerConstants;
 import frc.robot.SwerveLogging;
-import frc.robot.systems.AutoHandlerSystem.AutoFSMState;
 import frc.robot.CommandSwerveDrivetrain;
 
-public class DriveFSMSystem {
+public class DriveFSMSystem extends SubsystemBase {
 	/* ======================== Constants ======================== */
 	// FSM state definitions
 	public enum FSMState {
@@ -39,7 +42,7 @@ public class DriveFSMSystem {
 	private final double maxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
 		// kSpeedAt12Volts desired top speed
 	private final double maxAngularRate =
-		RotationsPerSecond.of(DriveConstants.MAC_ANGULAR_VELO_RPS).in(RadiansPerSecond);
+		RotationsPerSecond.of(DriveConstants.MAX_ANGULAR_VELO_RPS).in(RadiansPerSecond);
 		//3/4 rps angle velo
 
 	private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
@@ -116,20 +119,22 @@ public class DriveFSMSystem {
 
 	/**
 	 * Performs specific action based on the autoState passed in.
-	 * @param autoState autoState that the subsystem executes.
-	 * @return if the action carried out in this state has finished executing
 	 */
-	public boolean updateAutonomous(AutoFSMState autoState) {
-		switch (autoState) {
-			case STATE1:
-				return handleAutoState1();
-			case STATE2:
-				return handleAutoState2();
-			case STATE3:
-				return handleAutoState3();
-			default:
-				return true;
-		}
+	public void updateAutonomous() {
+	}
+
+	/**
+	 * Follow the given trajectory sample.
+	 * @return An AutoFactory instance for creating autonomous routines.
+	 */
+	public AutoFactory createAutoFactory() {
+		return new AutoFactory(
+			() -> drivetrain.getState().Pose,
+			drivetrain::resetPose,
+			drivetrain::followTrajectory,
+			true,
+			this
+		);
 	}
 
 	/* ======================== Private methods ======================== */

@@ -1,32 +1,15 @@
 package frc.robot;
 
-import java.util.function.Supplier;
+import com.ctre.phoenix6.hardware.CANcoder;
+import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.swerve.SwerveDrivetrain;
+import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
+import com.ctre.phoenix6.swerve.SwerveModuleConstants;
+import com.ctre.phoenix6.swerve.SwerveRequest;
 
-import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrain;
-import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrainConstants;
-import com.ctre.phoenix6.mechanisms.swerve.SwerveModuleConstants;
-import com.ctre.phoenix6.mechanisms.swerve.SwerveRequest;
-import com.ctre.phoenix6.signals.NeutralModeValue;
-import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.commands.PathPlannerAuto;
-import com.pathplanner.lib.util.HolonomicPathFollowerConfig;
-import com.pathplanner.lib.util.PIDConstants;
-import com.pathplanner.lib.util.ReplanningConfig;
-
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.units.Measure;
-import edu.wpi.first.units.Voltage;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.RobotController;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Subsystem;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
-import frc.robot.Util.ModifiedSignalLogger;
-import frc.robot.Util.SwerveVoltageRequest;
-import frc.robot.generated.TunerConstants;
-
-import static edu.wpi.first.units.Units.*;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 
 /**
  * Class that extends the Phoenix SwerveDrivetrain class and implements subsystem
@@ -34,17 +17,34 @@ import static edu.wpi.first.units.Units.*;
  */
 public class CommandSwerveDrivetrain extends SwerveDrivetrain {
 
-    public CommandSwerveDrivetrain(SwerveDrivetrainConstants driveTrainConstants, double OdometryUpdateFrequency, SwerveModuleConstants... modules) {
-        super(driveTrainConstants, OdometryUpdateFrequency, modules);
-        configNeutralMode(NeutralModeValue.Coast);
-    }
-    public CommandSwerveDrivetrain(SwerveDrivetrainConstants driveTrainConstants, SwerveModuleConstants... modules) {
-        super(driveTrainConstants, modules);
-        configNeutralMode(NeutralModeValue.Coast);
+    /* Blue alliance sees forward as 0 degrees (toward red alliance wall) */
+    private static final Rotation2d kBlueAlliancePerspectiveRotation = Rotation2d.kZero;
+    /* Red alliance sees forward as 180 degrees (toward blue alliance wall) */
+    private static final Rotation2d kRedAlliancePerspectiveRotation = Rotation2d.k180deg;
+    /* Keep track if we've ever applied the operator perspective before or not */
+    private boolean m_hasAppliedOperatorPerspective = false;
+    
+    public CommandSwerveDrivetrain(
+        SwerveDrivetrainConstants drivetrainConstants,
+        SwerveModuleConstants<?, ?, ?>... modules
+    ) {
+        super(
+            TalonFX::new, TalonFX::new, CANcoder::new,
+            drivetrainConstants, modules
+        );
     }
 
-    public Command applySwerveRequest(SwerveRequest req) {
-        return this.setControl(req);
+    public void applyOperatorPerspective() {
+        if (!m_hasAppliedOperatorPerspective || DriverStation.isDisabled()) {
+            DriverStation.getAlliance().ifPresent(allianceColor -> {
+                setOperatorPerspectiveForward(
+                    allianceColor == Alliance.Red
+                        ? kRedAlliancePerspectiveRotation
+                        : kBlueAlliancePerspectiveRotation
+                );
+                m_hasAppliedOperatorPerspective = true;
+            });
+        }
     }
 
     // @Override
@@ -52,8 +52,4 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain {
     //     /* Assume 20ms update rate, get battery voltage from WPILib */
     //     updateSimState(0.02, RobotController.getBatteryVoltage());
     // }
-
-    public ChassisSpeeds getCurrentRobotChassisSpeeds() {
-        return m_kinematics.toChassisSpeeds(getState().ModuleStates);
-    }
 }

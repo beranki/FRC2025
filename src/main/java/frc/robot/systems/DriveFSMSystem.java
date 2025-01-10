@@ -2,6 +2,8 @@ package frc.robot.systems;
 
 // WPILib Imports
 import edu.wpi.first.math.filter.SlewRateLimiter;
+import edu.wpi.first.math.geometry.Rotation2d;
+
 import static edu.wpi.first.units.Units.*;
 
 //CTRE Imports
@@ -14,12 +16,11 @@ import com.revrobotics.spark.SparkMax;
 
 // Robot Imports
 import frc.robot.TeleopInput;
-import frc.robot.generated.TunerConstants;
-import frc.robot.HardwareMap;
-import frc.robot.systems.AutoHandlerSystem.AutoFSMState;
-import main.java.frc.robot.Telemetry;
-import frc.robot.CommandSwerveDrivetrain;
 import frc.robot.constants.TunerConstants;
+import frc.robot.HardwareMap;
+import frc.robot.SwerveLogging;
+import frc.robot.systems.AutoHandlerSystem.AutoFSMState;
+import frc.robot.CommandSwerveDrivetrain;
 
 public class DriveFSMSystem {
 	/* ======================== Constants ======================== */
@@ -41,7 +42,7 @@ public class DriveFSMSystem {
 	private final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
 	private final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
 
-	private final Telemetry logger = new Telemetry(MAX_SPEED);
+	private final SwerveLogging logger = new SwerveLogging(MAX_SPEED);
 
 	CommandSwerveDrivetrain drivetrain;
 
@@ -57,7 +58,6 @@ public class DriveFSMSystem {
 	public DriveFSMSystem() {
 		// Perform hardware init
 		drivetrain = TunerConstants.createDrivetrain();
-		drivetrain.registerTelemetry(logger::telemeterize);
 
 		// Reset state machine
 		reset();
@@ -154,18 +154,20 @@ public class DriveFSMSystem {
 	 *        the robot is in autonomous mode.
 	 */
 	private void handleTeleOpState(TeleopInput input) {
-		drivetrain.applySwerveRequest(
+		logger.applyStateLogging(drivetrain.getState());
+		
+		drivetrain.setControl(
 			drive.withVelocityX(-input.getDriveLeftJoystickY() * MAX_SPEED) // Drive forward with negative Y (forward)
 			.withVelocityY(-input.getDriveLeftJoystickX() * MAX_SPEED) // Drive left with negative X (left)
 			.withRotationalRate(-input.getDriveRightJoystickX() * MAX_ANGULAR_RATE) // Drive counterclockwise with negative X (left)
 		);
 
 		if (input.getDriveTriangleButton()) {
-			drivetrain.applySwerveRequest(brake);
+			drivetrain.setControl(brake);
 		}
 
 		if (input.getDriveCircleButton()) {
-			drivetrain.applySwerveRequest(
+			drivetrain.setControl(
 				point.withModuleDirection(new Rotation2d(-input.getDriveLeftJoystickY(), -input.getDriveLeftJoystickX()))
 			);
 		}

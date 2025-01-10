@@ -155,6 +155,7 @@ public class DriveFSMSystem {
 	 */
 	private void handleTeleOpState(TeleopInput input) {
 		logger.applyStateLogging(drivetrain.getState());
+		drivetrain.applyOperatorPerspective();
 		
 		drivetrain.setControl(
 			drive.withVelocityX(-input.getDriveLeftJoystickY() * MAX_SPEED) // Drive forward with negative Y (forward)

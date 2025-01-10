@@ -2,6 +2,7 @@ package frc.robot.systems;
 
 // WPILib Imports
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -31,13 +32,8 @@ public class DriveFSMSystem extends SubsystemBase {
 		TELEOP_STATE,
 	}
 
-	@SuppressWarnings("unused")
-	private static final float MOTOR_RUN_POWER = 0.1f;
-	@SuppressWarnings("unused")
 	private final SlewRateLimiter xLimiter = new SlewRateLimiter(2);
-	@SuppressWarnings("unused")
 	private final SlewRateLimiter yLimiter = new SlewRateLimiter(0.5);
-	@SuppressWarnings("unused")
 	private final SlewRateLimiter rotLimiter = new SlewRateLimiter(0.5);
 	private final double maxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
 		// kSpeedAt12Volts desired top speed
@@ -170,6 +166,8 @@ public class DriveFSMSystem extends SubsystemBase {
 		logger.applyStateLogging(drivetrain.getState());
 		drivetrain.applyOperatorPerspective();
 
+		applyVisionCorrection();
+
 		drivetrain.setControl(
 			drive.withVelocityX(-MathUtil.applyDeadband(
 				input.getDriveLeftJoystickY(), DriveConstants.DRIVE_DEADBAND
@@ -198,6 +196,10 @@ public class DriveFSMSystem extends SubsystemBase {
 		if (input.getDriveBackButtonPressed()) {
 			drivetrain.seedFieldCentric();
 		}
+	}
+
+	private void applyVisionCorrection() {
+		
 	}
 
 	/**

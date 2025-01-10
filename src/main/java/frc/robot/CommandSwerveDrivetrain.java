@@ -4,15 +4,18 @@ import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.swerve.SwerveDrivetrain;
 import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
+import com.ctre.phoenix6.swerve.SwerveModule;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 
 import choreo.trajectory.SwerveSample;
 
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 
@@ -39,6 +42,12 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain {
 	private final PIDController autoXPid = new PIDController(10, 0, 0);
 	private final PIDController autoYPid = new PIDController(10, 0, 0);
 	private final PIDController autoHeadingPid = new PIDController(7.5, 0, 0);
+
+	private final SwerveDrivePoseEstimator swerveDrivePoseEstimator =
+		new SwerveDrivePoseEstimator(
+			getKinematics(),
+			getPigeon2().getRotation2d(),
+			getModulePositions(), new Pose2d());
 
 	/**
 	 * Constructs a CommandSwerveDrivetrain with the specified drivetrain constants and modules.
@@ -98,6 +107,20 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain {
 			.withWheelForceFeedforwardsX(sample.moduleForcesX())
 			.withWheelForceFeedforwardsY(sample.moduleForcesY())
 		);
+	}
+
+	/**
+	 * Get the SwerveModulePosition for localized odo
+	 * @return
+	 */
+	public SwerveModulePosition[] getModulePositions() {
+		SwerveModulePosition[] pos = new SwerveModulePosition[(2 + 2)];
+
+		for (int i = 0; i < (2 + 2); i++) {
+			pos[i] = getModule(i).getPosition(false);
+		}
+
+		return pos;
 	}
 
 	// @Override

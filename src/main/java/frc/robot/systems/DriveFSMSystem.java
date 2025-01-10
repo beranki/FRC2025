@@ -5,21 +5,18 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Rotation2d;
 
-import static edu.wpi.first.units.Units.*;
+import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
+import static edu.wpi.first.units.Units.RotationsPerSecond;
 
 //CTRE Imports
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 
-
-// Third party Hardware Imports
-import com.revrobotics.spark.SparkMax;
-
 // Robot Imports
 import frc.robot.TeleopInput;
 import frc.robot.constants.DriveConstants;
 import frc.robot.constants.TunerConstants;
-import frc.robot.HardwareMap;
 import frc.robot.SwerveLogging;
 import frc.robot.systems.AutoHandlerSystem.AutoFSMState;
 import frc.robot.CommandSwerveDrivetrain;
@@ -31,22 +28,29 @@ public class DriveFSMSystem {
 		TELEOP_STATE,
 	}
 
+	@SuppressWarnings("unused")
 	private static final float MOTOR_RUN_POWER = 0.1f;
+	@SuppressWarnings("unused")
 	private final SlewRateLimiter xLimiter = new SlewRateLimiter(2);
+	@SuppressWarnings("unused")
 	private final SlewRateLimiter yLimiter = new SlewRateLimiter(0.5);
+	@SuppressWarnings("unused")
 	private final SlewRateLimiter rotLimiter = new SlewRateLimiter(0.5);
-	private final double MAX_SPEED = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
-    private final double MAX_ANGULAR_RATE = RotationsPerSecond.of(0.75).in(RadiansPerSecond); // 3/4 of a rotation per second max angular velocity
+	private final double maxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
+		// kSpeedAt12Volts desired top speed
+	private final double maxAngularRate =
+		RotationsPerSecond.of(DriveConstants.MAC_ANGULAR_VELO_RPS).in(RadiansPerSecond);
+		//3/4 rps angle velo
 
 	private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
-	.withDeadband(MAX_SPEED * 0.1).withRotationalDeadband(MAX_ANGULAR_RATE * 0.1) // Add a 10% deadband
-	.withDriveRequestType(DriveRequestType.OpenLoopVoltage); // Use open-loop control for drive motors
+		.withDeadband(maxSpeed * DriveConstants.DRIVE_DEADBAND) // 20% deadband
+		.withRotationalDeadband(maxAngularRate * DriveConstants.ROTATION_DEADBAND) //10% deadband
+		.withDriveRequestType(DriveRequestType.OpenLoopVoltage); // Use open-loop for drive motors
 	private final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
 	private final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
 
-	private final SwerveLogging logger = new SwerveLogging(MAX_SPEED);
-
-	CommandSwerveDrivetrain drivetrain;
+	private final SwerveLogging logger = new SwerveLogging(maxSpeed);
+	private CommandSwerveDrivetrain drivetrain;
 
 	/* ======================== Private variables ======================== */
 	private FSMState currentState;
@@ -164,15 +168,15 @@ public class DriveFSMSystem {
 		drivetrain.setControl(
 			drive.withVelocityX(-MathUtil.applyDeadband(
 				input.getDriveLeftJoystickY(), DriveConstants.DRIVE_DEADBAND
-				) * MAX_SPEED) // Drive forward with negative Y (forward)
+				) * maxSpeed) // Drive forward with negative Y (forward)
 			.withVelocityY(
 				-MathUtil.applyDeadband(
 					input.getDriveLeftJoystickX(), DriveConstants.DRIVE_DEADBAND
-					) * MAX_SPEED) // Drive left with negative X (left)
+					) * maxSpeed) // Drive left with negative X (left)
 			.withRotationalRate(
 				-MathUtil.applyDeadband(
 					input.getDriveRightJoystickX(), DriveConstants.DRIVE_DEADBAND
-					) * MAX_ANGULAR_RATE) // Drive counterclockwise with negative X (left)
+					) * maxAngularRate) // Drive counterclockwise with negative X (left)
 		);
 
 		if (input.getDriveTriangleButton()) {
@@ -181,7 +185,8 @@ public class DriveFSMSystem {
 
 		if (input.getDriveCircleButton()) {
 			drivetrain.setControl(
-				point.withModuleDirection(new Rotation2d(-input.getDriveLeftJoystickY(), -input.getDriveLeftJoystickX()))
+				point.withModuleDirection(new Rotation2d(-input.getDriveLeftJoystickY(),
+					-input.getDriveLeftJoystickX()))
 			);
 		}
 

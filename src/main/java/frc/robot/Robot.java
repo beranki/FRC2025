@@ -3,9 +3,9 @@
 // the WPILib BSD license file in the root directory of this project.
 package frc.robot;
 
+
 // WPILib Imports
 import edu.wpi.first.wpilibj.TimedRobot;
-
 // Systems
 import frc.robot.systems.DriveFSMSystem;
 // import frc.robot.systems.Mech1FSMSystem;
@@ -35,6 +35,7 @@ public class Robot extends TimedRobot {
 	public void robotInit() {
 		System.out.println("robotInit");
 		input = new TeleopInput();
+
 
 		// Instantiate all systems here
 		if (HardwareMap.isDriveHardwarePresent()) {

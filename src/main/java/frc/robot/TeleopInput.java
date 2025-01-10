@@ -1,7 +1,6 @@
 package frc.robot;
 
 // WPILib Imports
-import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.PS4Controller;
 
 /**

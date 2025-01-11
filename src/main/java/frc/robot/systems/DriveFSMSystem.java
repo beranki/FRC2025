@@ -3,7 +3,9 @@ package frc.robot.systems;
 // WPILib Imports
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.SlewRateLimiter;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import static edu.wpi.first.units.Units.MetersPerSecond;
@@ -121,6 +123,7 @@ public class DriveFSMSystem extends SubsystemBase {
 	 * Performs specific action based on the autoState passed in.
 	 */
 	public void updateAutonomous() {
+		logger.applyStateLogging(drivetrain.getState());
 	}
 
 	/**
@@ -198,6 +201,18 @@ public class DriveFSMSystem extends SubsystemBase {
 		if (input.getDriveBackButtonPressed()) {
 			drivetrain.seedFieldCentric();
 		}
+	}
+
+	public Command brakeCommand() {
+		class BrakeCommand extends Command {
+			@Override
+			public boolean isFinished() {
+				drivetrain.setControl(brake);
+				return true;
+			}
+		}
+
+		return new BrakeCommand();
 	}
 
 	/**

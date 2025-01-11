@@ -54,7 +54,7 @@ public class Robot extends TimedRobot {
 			driveSystem = new DriveFSMSystem();
 		}
 		autoFactory = driveSystem.createAutoFactory();
-		autoRoutines = new AutoRoutines(autoFactory);
+		autoRoutines = new AutoRoutines(autoFactory, driveSystem);
 
 		autoChooser.addRoutine("testPath", autoRoutines::testAuto);
 		SmartDashboard.putData("AUTO CHOOSER", autoChooser);
@@ -86,6 +86,7 @@ public class Robot extends TimedRobot {
 	public void autonomousPeriodic() {
 		// autoHandler.update();
 		CommandScheduler.getInstance().run();
+		driveSystem.updateAutonomous();
 	}
 
 	@Override

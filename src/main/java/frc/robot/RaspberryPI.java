@@ -6,7 +6,7 @@ import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import frc.robot.SwerveConstants.VisionConstants;
+import frc.robot.constants.SwerveConstants.VisionConstants;
 
 public class RaspberryPI {
 	private double fps = 0;

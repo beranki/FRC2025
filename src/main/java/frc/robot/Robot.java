@@ -3,15 +3,14 @@
 // the WPILib BSD license file in the root directory of this project.
 package frc.robot;
 
-
-import choreo.auto.AutoChooser;
-import choreo.auto.AutoFactory;
 // WPILib Imports
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.constants.TunerConstants;
+import frc.robot.systems.AutoHandlerSystem;
+import frc.robot.systems.AutoHandlerSystem.AutoPath;
 // Systems
 import frc.robot.systems.DriveFSMSystem;
 // import frc.robot.systems.Mech1FSMSystem;
@@ -30,14 +29,10 @@ public class Robot extends TimedRobot {
 	// Systems
 	private DriveFSMSystem driveSystem;
 	private CommandSwerveDrivetrain swerveDrivetrain;
-	private AutoFactory autoFactory;
-	private AutoRoutines autoRoutines;
-	private AutoChooser autoChooser = new AutoChooser();
-	private Command autCommand;
+	private AutoHandlerSystem autoHandler;
 	// private Mech1FSMSystem mech1System;
-	// private Mech2FSMSystem mech2System;
+	// private Mech2FSMSystem mech2System;s
 
-	// private AutoHandlerSystem autoHandler;
 
 	/**
 	 * This function is run when the robot is first started up and should be used for any
@@ -48,25 +43,12 @@ public class Robot extends TimedRobot {
 		System.out.println("robotInit");
 		input = new TeleopInput();
 
-
 		// Instantiate all systems here
 		if (HardwareMap.isDriveHardwarePresent()) {
 			driveSystem = new DriveFSMSystem();
 		}
-		autoFactory = driveSystem.createAutoFactory();
-		autoRoutines = new AutoRoutines(autoFactory, driveSystem);
 
-		autoChooser.addRoutine("testPath", autoRoutines::testAuto);
-		SmartDashboard.putData("AUTO CHOOSER", autoChooser);
-
-	// 	if (HardwareMap.isMech1HardwarePresent()) {
-	// 		mech1System = new Mech1FSMSystem();
-	// 	}
-
-	// 	if (HardwareMap.isMech2HardwarePresent()) {
-	// 		mech2System = new Mech2FSMSystem();
-	// 	}
-	// 	autoHandler = new AutoHandlerSystem(driveSystem, mech1System, mech2System);
+		autoHandler = new AutoHandlerSystem(driveSystem);
 
 
 	}
@@ -74,19 +56,12 @@ public class Robot extends TimedRobot {
 	@Override
 	public void autonomousInit() {
 		System.out.println("-------- Autonomous Init --------");
-		// autoHandler.reset(AutoPath.PATH1);
-		autCommand = getAutonomousCommand();
-
-		if (autCommand != null) {
-			autCommand.schedule();
-		}
+		autoHandler.reset(AutoPath.PATH1);
 	}
 
 	@Override
 	public void autonomousPeriodic() {
-		// autoHandler.update();
-		CommandScheduler.getInstance().run();
-		driveSystem.updateAutonomous();
+		autoHandler.update();
 	}
 
 	@Override

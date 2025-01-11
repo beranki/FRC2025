@@ -3,8 +3,6 @@ package frc.robot.systems;
 // WPILib Imports
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
-import edu.wpi.first.math.filter.SlewRateLimiter;
-import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -17,13 +15,16 @@ import static edu.wpi.first.units.Units.RotationsPerSecond;
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 
 import choreo.auto.AutoFactory;
+import choreo.auto.AutoRoutine;
+import choreo.auto.AutoTrajectory;
 
 import com.ctre.phoenix6.swerve.SwerveRequest;
 
 // Robot Imports
 import frc.robot.TeleopInput;
-import frc.robot.constants.DriveConstants;
+import frc.robot.constants.SwerveConstants.DriveConstants;
 import frc.robot.constants.TunerConstants;
+import frc.robot.systems.AutoHandlerSystem.AutoFSMState;
 import frc.robot.SwerveLogging;
 import frc.robot.CommandSwerveDrivetrain;
 
@@ -31,12 +32,9 @@ public class DriveFSMSystem extends SubsystemBase {
 	/* ======================== Constants ======================== */
 	// FSM state definitions
 	public enum FSMState {
-		TELEOP_STATE,
+		TELEOP_STATE
 	}
 
-	private final SlewRateLimiter xLimiter = new SlewRateLimiter(2);
-	private final SlewRateLimiter yLimiter = new SlewRateLimiter(0.5);
-	private final SlewRateLimiter rotLimiter = new SlewRateLimiter(0.5);
 	private final double maxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
 		// kSpeedAt12Volts desired top speed
 	private final double maxAngularRate =
@@ -53,6 +51,8 @@ public class DriveFSMSystem extends SubsystemBase {
 	private final SwerveLogging logger = new SwerveLogging(maxSpeed);
 	private CommandSwerveDrivetrain drivetrain;
 
+	private AutoFactory autoFactory;
+
 	/* ======================== Private variables ======================== */
 	private FSMState currentState;
 
@@ -65,6 +65,14 @@ public class DriveFSMSystem extends SubsystemBase {
 	public DriveFSMSystem() {
 		// Perform hardware init
 		drivetrain = TunerConstants.createDrivetrain();
+
+		autoFactory = new AutoFactory(
+			() -> drivetrain.getState().Pose,
+			drivetrain::resetPose,
+			drivetrain::followTrajectory,
+			true,
+			this
+		);
 
 		// Reset state machine
 		reset();
@@ -117,23 +125,10 @@ public class DriveFSMSystem extends SubsystemBase {
 
 	/**
 	 * Performs specific action based on the autoState passed in.
+	 * @return if the action carried out in this state has finished executing
 	 */
-	public void updateAutonomous() {
+	public boolean updateAutonomous() {
 		logger.applyStateLogging(drivetrain.getState());
-	}
-
-	/**
-	 * Follow the given trajectory sample.
-	 * @return An AutoFactory instance for creating autonomous routines.
-	 */
-	public AutoFactory createAutoFactory() {
-		return new AutoFactory(
-			() -> drivetrain.getState().Pose,
-			drivetrain::resetPose,
-			drivetrain::followTrajectory,
-			true,
-			this
-		);
 	}
 
 	/* ======================== Private methods ======================== */
@@ -169,8 +164,6 @@ public class DriveFSMSystem extends SubsystemBase {
 		logger.applyStateLogging(drivetrain.getState());
 		drivetrain.applyOperatorPerspective();
 
-		applyVisionCorrection();
-
 		drivetrain.setControl(
 			drive.withVelocityX(-MathUtil.applyDeadband(
 				input.getDriveLeftJoystickY(), DriveConstants.DRIVE_DEADBAND
@@ -186,7 +179,7 @@ public class DriveFSMSystem extends SubsystemBase {
 		);
 
 		if (input.getDriveTriangleButton()) {
-			drivetrain.setControl(brake);
+			brakeMotors();
 		}
 
 		if (input.getDriveCircleButton()) {
@@ -201,16 +194,9 @@ public class DriveFSMSystem extends SubsystemBase {
 		}
 	}
 
-	public Command brakeCommand() {
-		class BrakeCommand extends Command {
-			@Override
-			public boolean isFinished() {
-				drivetrain.setControl(brake);
-				return true;
-			}
-		}
-
-		return new BrakeCommand();
+	/** Brake drivetrain motors. */
+	public void brakeMotors() {
+		drivetrain.setControl(brake);
 	}
 
 	/**
@@ -218,7 +204,18 @@ public class DriveFSMSystem extends SubsystemBase {
 	 * @return if the action carried out has finished executing
 	 */
 	private boolean handleAutoState1() {
-		return true;
+
+		final AutoRoutine routine = autoFactory.newRoutine("testPath");
+		final AutoTrajectory path1 = routine.trajectory("testPath1");
+		final AutoTrajectory path2 = routine.trajectory("testPath2");
+
+		routine.active().onTrue(
+			path1.resetOdometry()
+			.andThen(path1.cmd())
+			.andThen(path2.cmd())
+		);
+
+		return !routine.active().getAsBoolean();
 	}
 
 	/**

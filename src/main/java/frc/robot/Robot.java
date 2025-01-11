@@ -11,6 +11,7 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.auto.AutoRoutines;
 import frc.robot.constants.TunerConstants;
 // Systems
 import frc.robot.systems.DriveFSMSystem;
@@ -53,10 +54,10 @@ public class Robot extends TimedRobot {
 		if (HardwareMap.isDriveHardwarePresent()) {
 			driveSystem = new DriveFSMSystem();
 		}
-		autoFactory = driveSystem.createAutoFactory();
-		autoRoutines = new AutoRoutines(autoFactory, driveSystem);
 
-		autoChooser.addRoutine("testPath", autoRoutines::testAuto);
+		autoRoutines = new AutoRoutines(driveSystem);
+
+		autoChooser.addRoutine("Path 1", autoRoutines::bS1R2StationR5);
 		SmartDashboard.putData("AUTO CHOOSER", autoChooser);
 
 	// 	if (HardwareMap.isMech1HardwarePresent()) {

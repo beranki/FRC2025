@@ -2,9 +2,7 @@ package frc.robot.systems;
 
 // WPILib Imports
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.filter.SlewRateLimiter;
-import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -15,7 +13,6 @@ import static edu.wpi.first.units.Units.RotationsPerSecond;
 
 //CTRE Imports
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
-
 import choreo.auto.AutoFactory;
 
 import com.ctre.phoenix6.swerve.SwerveRequest;
@@ -24,8 +21,11 @@ import com.ctre.phoenix6.swerve.SwerveRequest;
 import frc.robot.TeleopInput;
 import frc.robot.constants.DriveConstants;
 import frc.robot.constants.TunerConstants;
+import frc.robot.constants.VisionConstants;
+import frc.robot.utils.SwerveUtils;
 import frc.robot.SwerveLogging;
 import frc.robot.CommandSwerveDrivetrain;
+import frc.robot.RaspberryPI;
 
 public class DriveFSMSystem extends SubsystemBase {
 	/* ======================== Constants ======================== */
@@ -52,6 +52,8 @@ public class DriveFSMSystem extends SubsystemBase {
 
 	private final SwerveLogging logger = new SwerveLogging(maxSpeed);
 	private CommandSwerveDrivetrain drivetrain;
+
+	private RaspberryPI rpi = new RaspberryPI();
 
 	/* ======================== Private variables ======================== */
 	private FSMState currentState;
@@ -169,8 +171,6 @@ public class DriveFSMSystem extends SubsystemBase {
 		logger.applyStateLogging(drivetrain.getState());
 		drivetrain.applyOperatorPerspective();
 
-		applyVisionCorrection();
-
 		drivetrain.setControl(
 			drive.withVelocityX(-MathUtil.applyDeadband(
 				input.getDriveLeftJoystickY(), DriveConstants.DRIVE_DEADBAND
@@ -201,6 +201,12 @@ public class DriveFSMSystem extends SubsystemBase {
 		}
 	}
 
+	/* ---- ALL AUTO COMMANDS --- */
+
+	/**
+	 * Command to brake the drive system after a path.
+	 * @return brake command.
+	 */
 	public Command brakeCommand() {
 		class BrakeCommand extends Command {
 			@Override
@@ -214,26 +220,77 @@ public class DriveFSMSystem extends SubsystemBase {
 	}
 
 	/**
-	 * Performs action for auto STATE1.
-	 * @return if the action carried out has finished executing
+	 * Command to align to any visible tags or not move if none are seen.
+	 * @param xOffset
+	 * @param tagID
+	 * @param yOffset
+	 * @return align to tag command.
 	 */
-	private boolean handleAutoState1() {
-		return true;
-	}
+	public Command alignToReefTagCommand(int tagID, double xOffset, double yOffset) {
+		class AlignToReefTagCommand extends Command {
+			private int id;
+			private double xOff;
+			private double yOff;
+			private boolean tagPositionAligned;
 
-	/**
-	 * Performs action for auto STATE2.
-	 * @return if the action carried out has finished executing
-	 */
-	private boolean handleAutoState2() {
-		return true;
-	}
+			AlignToReefTagCommand(int tagID, double xOffset, double yOffset) {
+				id = tagID;
+				xOff = xOffset;
+				yOff = yOffset;
+				tagPositionAligned = false;
+			}
 
-	/**
-	 * Performs action for auto STATE3.
-	 * @return if the action carried out has finished executing
-	 */
-	private boolean handleAutoState3() {
-		return true;
+			@Override
+			public void execute() {
+				if (rpi.getAprilTagX(id) != VisionConstants.UNABLE_TO_SEE_TAG_CONSTANT) {
+					double yDiff = rpi.getAprilTagY(id) - yOff;
+					double xDiff = rpi.getAprilTagX(id) - xOff;
+					double aDiff = rpi.getAprilTagXInv(id) * Math.PI / VisionConstants.N_180;
+					//TODO: x inv might not be correct for at angle.
+
+					double xSpeed = Math.abs(xDiff) > VisionConstants.X_MARGIN_TO_REEF
+						? SwerveUtils.clamp(
+							xDiff / VisionConstants.REEF_TRANSLATIONAL_ACCEL_CONSTANT,
+							-VisionConstants.MAX_SPEED_METERS_PER_SECOND,
+							VisionConstants.MAX_SPEED_METERS_PER_SECOND
+						) : 0;
+					double ySpeed = Math.abs(yDiff) > VisionConstants.Y_MARGIN_TO_REEF
+						? SwerveUtils.clamp(
+							yDiff / VisionConstants.REEF_TRANSLATIONAL_ACCEL_CONSTANT,
+							-VisionConstants.MAX_SPEED_METERS_PER_SECOND,
+							VisionConstants.MAX_SPEED_METERS_PER_SECOND
+						) : 0;
+					double aSpeed = Math.abs(aDiff) > VisionConstants.ROT_MARGIN_TO_REEF
+						? -SwerveUtils.clamp(
+							aDiff / VisionConstants.REEF_ROTATIONAL_ACCEL_CONSTANT,
+							-VisionConstants.MAX_ANGULAR_SPEED_RADIANS_PER_SECOND,
+							VisionConstants.MAX_ANGULAR_SPEED_RADIANS_PER_SECOND
+						) : 0;
+
+					if (xSpeed == 0 && ySpeed == 0 && aSpeed == 0) {
+						tagPositionAligned = true;
+					}
+
+					drivetrain.setControl(
+						drive.withVelocityX(ySpeed)
+						.withVelocityY(xSpeed)
+						.withRotationalRate(aSpeed)
+					);
+
+				}
+			}
+
+			@Override
+			public boolean isFinished() {
+				return tagPositionAligned;
+			}
+
+			@Override
+			public void end(boolean interrupted) {
+				drivetrain.setControl(brake);
+			}
+		}
+
+		return new AlignToReefTagCommand(tagID, xOffset, yOffset);
 	}
 }

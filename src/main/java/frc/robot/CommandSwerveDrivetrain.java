@@ -4,7 +4,6 @@ import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.swerve.SwerveDrivetrain;
 import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
-import com.ctre.phoenix6.swerve.SwerveModule;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 
@@ -110,8 +109,8 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain {
 	}
 
 	/**
-	 * Get the SwerveModulePosition for localized odo
-	 * @return
+	 * Get the SwerveModulePosition for localized odo.
+	 * @return module positions
 	 */
 	public SwerveModulePosition[] getModulePositions() {
 		SwerveModulePosition[] pos = new SwerveModulePosition[(2 + 2)];

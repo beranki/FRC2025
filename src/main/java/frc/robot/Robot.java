@@ -5,6 +5,7 @@ package frc.robot;
 
 
 import choreo.auto.AutoFactory;
+import choreo.auto.AutoRoutine;
 // WPILib Imports
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -32,14 +33,14 @@ public class Robot extends TimedRobot {
 	private CommandSwerveDrivetrain swerveDrivetrain;
 	private AutoFactory autoFactory;
 	private AutoRoutines autoRoutines;
-	private SendableChooser autoChooser = new SendableChooser();
-	private Command autCommand;
+	private SendableChooser<Command> autoChooser = new SendableChooser<Command>();
+	private Command autoWorkflow;
 	// private Mech1FSMSystem mech1System;
 	// private Mech2FSMSystem mech2System;
 
 	// private AutoHandlerSystem autoHandler;
 
-	private static final String[] PATH_1 = new String[] {
+	private static final Object[] PATH_1 = new Object[] {
 		"S1_R2", "R2_Station"
 	};
 
@@ -61,7 +62,7 @@ public class Robot extends TimedRobot {
 		autoRoutines = new AutoRoutines(driveSystem);
 
 		autoChooser.addOption("Path 1",
-			autoRoutines.generateSequentialAutoWorkflow(null));
+			autoRoutines.generateSequentialAutoWorkflow(PATH_1).cmd());
 		SmartDashboard.putData("AUTO CHOOSER", autoChooser);
 
 	// 	if (HardwareMap.isMech1HardwarePresent()) {
@@ -80,10 +81,10 @@ public class Robot extends TimedRobot {
 	public void autonomousInit() {
 		System.out.println("-------- Autonomous Init --------");
 		// autoHandler.reset(AutoPath.PATH1);
-		autCommand = getAutonomousCommand();
+		autoWorkflow = getSelectedAutoRoutine();
 
-		if (autCommand != null) {
-			autCommand.schedule();
+		if (autoWorkflow != null) {
+			autoWorkflow.schedule();
 		}
 	}
 
@@ -147,7 +148,7 @@ public class Robot extends TimedRobot {
 	 *
 	 * @return the selected autonomous command
 	 */
-	public Command getAutonomousCommand() {
-		return autoChooser.selectedCommand();
+	public Command getSelectedAutoRoutine() {
+		return autoChooser.getSelected();
 	}
 }

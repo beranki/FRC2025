@@ -2,7 +2,6 @@ package frc.robot.auto;
 
 import java.io.File;
 import java.util.HashMap;
-import java.util.List;
 
 import choreo.auto.AutoFactory;
 import choreo.auto.AutoRoutine;

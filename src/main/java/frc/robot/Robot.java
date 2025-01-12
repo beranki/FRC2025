@@ -4,10 +4,10 @@
 package frc.robot;
 
 
-import choreo.auto.AutoChooser;
 import choreo.auto.AutoFactory;
 // WPILib Imports
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
@@ -27,18 +27,21 @@ import frc.robot.systems.DriveFSMSystem;
 public class Robot extends TimedRobot {
 	private TeleopInput input;
 	private TunerConstants constants;
-
 	// Systems
 	private DriveFSMSystem driveSystem;
 	private CommandSwerveDrivetrain swerveDrivetrain;
 	private AutoFactory autoFactory;
 	private AutoRoutines autoRoutines;
-	private AutoChooser autoChooser = new AutoChooser();
+	private SendableChooser autoChooser = new SendableChooser();
 	private Command autCommand;
 	// private Mech1FSMSystem mech1System;
 	// private Mech2FSMSystem mech2System;
 
 	// private AutoHandlerSystem autoHandler;
+
+	private static final String[] PATH_1 = new String[] {
+		"S1_R2", "R2_Station"
+	};
 
 	/**
 	 * This function is run when the robot is first started up and should be used for any
@@ -57,7 +60,8 @@ public class Robot extends TimedRobot {
 
 		autoRoutines = new AutoRoutines(driveSystem);
 
-		autoChooser.addRoutine("Path 1", autoRoutines::bS1R2StationR5);
+		autoChooser.addOption("Path 1",
+			autoRoutines.generateSequentialAutoWorkflow(null));
 		SmartDashboard.putData("AUTO CHOOSER", autoChooser);
 
 	// 	if (HardwareMap.isMech1HardwarePresent()) {

@@ -5,18 +5,22 @@ package frc.robot;
 
 import java.io.File;
 
+import org.ironmaple.simulation.SimulatedArena;
+import org.ironmaple.simulation.seasonspecific.reefscape2025.ReefscapeCoralAlgaeStack;
+import org.littletonrobotics.junction.LoggedRobot;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.NT4Publisher;
+
 import edu.wpi.first.wpilibj.Filesystem;
 // WPILib Imports
-import edu.wpi.first.wpilibj.TimedRobot;
 
 // Systems
 import frc.robot.systems.DriveFSMSystem;
-
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
  * each mode, as described in the TimedRobot documentation.
  */
-public class Robot extends TimedRobot {
+public class Robot extends LoggedRobot {
 	private TeleopInput input;
 
 	// Systems
@@ -25,6 +29,15 @@ public class Robot extends TimedRobot {
 	//private Mech2FSMSystem mech2System;
 
 	//private AutoHandlerSystem autoHandler;
+
+	/**
+	 * Constructs a robot and sets up AdvantageKit logging.
+	 */
+	public Robot() {
+		Logger.recordMetadata("2473 FRC", "2025 Season");
+		Logger.addDataReceiver(new NT4Publisher());
+		Logger.start();
+	}
 
 	/**
 	 * This function is run when the robot is first started up and should be used for any
@@ -37,8 +50,8 @@ public class Robot extends TimedRobot {
 
 		// Instantiate all systems here
 		if (HardwareMap.isDriveHardwarePresent()) {
-			driveSystem = new DriveFSMSystem(new File(Filesystem.getDeployDirectory(),
-			"swerve/mk4n"));
+			driveSystem = new DriveFSMSystem(
+				new File(Filesystem.getDeployDirectory(), "swerve"), isSimulation());
 		}
 
 		// if (HardwareMap.isMech1HardwarePresent()) {
@@ -101,10 +114,30 @@ public class Robot extends TimedRobot {
 	@Override
 	public void simulationInit() {
 		System.out.println("-------- Simulation Init --------");
+		SimulatedArena.getInstance().resetFieldForAuto();
 	}
 
 	@Override
-	public void simulationPeriodic() { }
+	public void simulationPeriodic() {
+		Logger.recordOutput(
+			"FieldSimulation/Robot/SimulatedDrivePose", driveSystem.getMapleSimSimulatedPose());
+		Logger.recordOutput(
+			"FieldSimulation/GameObject/AlgaeStackPose",
+			ReefscapeCoralAlgaeStack.getStackedAlgaePoses(SimulatedArena.getInstance()));
+		Logger.recordOutput(
+			"FieldSimulation/GameObject/CoralStackPose",
+			ReefscapeCoralAlgaeStack.getStackedCoralPoses(SimulatedArena.getInstance()));
+
+		// These still need to be logged because once the stacks ^^^ have been toppled over
+		//they become seperate game pieces on ground.
+		// At that point, logging for them needs to be transferred over to these below.
+		Logger.recordOutput(
+			"FieldSimulation/GameObject/Algae",
+			SimulatedArena.getInstance().getGamePiecesArrayByType("Algae"));
+		Logger.recordOutput(
+			"FieldSimulation/GameObject/Coral",
+			SimulatedArena.getInstance().getGamePiecesArrayByType("Coral"));
+	}
 
 	// Do not use robotPeriodic. Use mode specific periodic methods instead.
 	@Override

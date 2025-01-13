@@ -13,7 +13,9 @@ import swervelib.math.Matter;
  * boolean constants. This class should not be used for any other purpose. All constants should
  * be declared globally (i.e. public static). Do not put anything functional in this class.
  *
- * <p>It is advised to statically import this class (or one of its inner classes) wherever the
+ * <p>
+ * It is advised to statically import this class (or one of its inner classes)
+ * wherever the
  * constants are needed, to reduce verbosity.
  */
 public final class Constants {
@@ -22,19 +24,12 @@ public final class Constants {
 	public static final Matter CHASSIS    = new Matter(new Translation3d(0, 0,
 		Units.inchesToMeters(8)), ROBOT_MASS_KG);
 	public static final double LOOP_TIME  = 0.13; //s, 20ms + 110ms sprk max velocity lag
-	public static final double MAX_SPEED  =	1; //5.39496;
-	public static final double ANGLE_VELO_COEFF  = 0.1;
 	// Maximum speed of the robot in meters per second, used to limit acceleration.
+	public static final double MAX_SPEED  =	1; //5.39496;
 
-//  public static final class AutonConstants
-//  {
-//
-//    public static final PIDConstants TRANSLATION_PID = new PIDConstants(0.7, 0, 0);
-//    public static final PIDConstants ANGLE_PID       = new PIDConstants(0.4, 0, 0.01);
-//  }
+	public static final double ANGLE_VELO_COEFF  = 0.1;
 
 	public static final class DrivebaseConstants {
-
 		// Hold time on motor brakes when disabled
 		public static final double WHEEL_LOCK_TIME = 10; // seconds
 	}

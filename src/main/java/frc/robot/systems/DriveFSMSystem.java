@@ -5,10 +5,8 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
-import static edu.wpi.first.units.Units.Meter;
 
 // Third party Hardware Imports
-import com.studica.frc.AHRS;
 
 // Robot Imports
 import frc.robot.TeleopInput;
@@ -36,7 +34,6 @@ public class DriveFSMSystem {
 	// Hardware devices should be owned by one and only one system. They must
 	// be private to their owner system and may not be used elsewhere.
 	private final SwerveDrive swerveDrive;
-
 	private int lockedSpeakerId;
 
 	/* ======================== Constructor ======================== */
@@ -44,9 +41,10 @@ public class DriveFSMSystem {
 	 * Create DriveFSMSystem and initialize to starting state. Also perform any
 	 * one-time initialization or configuration of hardware required. Note
 	 * the constructor is called only once when the robot boots.
-	 * @param directory The directory where the configuration files are located.
+	 * @param directory directory for swerve module jsons
+	 * @param isSimulation if the robot is simulated or is the real robot
 	 */
-	public DriveFSMSystem(File directory) {
+	public DriveFSMSystem(File directory, boolean isSimulation) {
 		// Perform hardware init
 		SwerveDriveTelemetry.verbosity = TelemetryVerbosity.HIGH;
 
@@ -55,7 +53,7 @@ public class DriveFSMSystem {
 
 			// setting customizations for swerve drive
 			swerveDrive.setHeadingCorrection(true);
-			swerveDrive.setCosineCompensator(true);
+			swerveDrive.setCosineCompensator(!isSimulation);
 			// swerveDrive.setAngularVelocityCompensation(true,
 			// 											true,
 			// 											Constants.ANGLE_VELO_COEFF);
@@ -68,6 +66,7 @@ public class DriveFSMSystem {
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+
 
 		// Reset state machine
 		reset();
@@ -160,7 +159,6 @@ public class DriveFSMSystem {
 	 *        the robot is in autonomous mode.
 	 */
 	private void handleTeleOpState(TeleopInput input) {
-
 		if (input == null) {
 			return;
 		}
@@ -171,9 +169,10 @@ public class DriveFSMSystem {
 		double strafeVal = MathUtil.applyDeadband(
 			input.getDriveLeftJoystickX(), OperatorConstants.LEFT_X_DEADBAND)
 			* swerveDrive.getMaximumChassisVelocity();
-		double rotationVal = MathUtil.applyDeadband(
+		double rotationVal = -MathUtil.applyDeadband(
 			input.getDriveRightJoystickX(), OperatorConstants.RIGHT_X_DEADBAND)
 			* swerveDrive.getMaximumChassisAngularVelocity();
+
 
 		swerveDrive.drive(
 			new Translation2d(-translationVal, -strafeVal),
@@ -240,5 +239,14 @@ public class DriveFSMSystem {
 
 	private boolean handleAutoState3() {
 		return true;
+	}
+
+	/**
+	 * Get the simulated MapleSim Pose.
+	 * @return The simulated MapleSim pose of the robot if mapleSimDrive exists, else returns null
+	 */
+	public Pose2d getMapleSimSimulatedPose() {
+		return swerveDrive.getMapleSimDrive().map(
+			sim -> sim.getSimulatedDriveTrainPose()).orElse(null);
 	}
 }

@@ -10,7 +10,6 @@ import com.ctre.phoenix6.swerve.SwerveRequest;
 import choreo.trajectory.SwerveSample;
 
 import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -41,12 +40,6 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain {
 	private final PIDController autoXPid = new PIDController(5, 0, 0);
 	private final PIDController autoYPid = new PIDController(5, 0, 0);
 	private final PIDController autoHeadingPid = new PIDController(0.75, 0, 0);
-
-	private final SwerveDrivePoseEstimator swerveDrivePoseEstimator =
-		new SwerveDrivePoseEstimator(
-			getKinematics(),
-			getPigeon2().getRotation2d(),
-			getModulePositions(), new Pose2d());
 
 	/**
 	 * Constructs a CommandSwerveDrivetrain with the specified drivetrain constants and modules.

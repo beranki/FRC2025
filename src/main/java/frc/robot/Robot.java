@@ -3,9 +3,6 @@
 // the WPILib BSD license file in the root directory of this project.
 package frc.robot;
 
-
-import choreo.auto.AutoFactory;
-import choreo.auto.AutoRoutine;
 // WPILib Imports
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -13,7 +10,8 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.auto.AutoRoutines;
-import frc.robot.constants.TunerConstants;
+import frc.robot.constants.AutoConstants.AutoCommands;
+
 // Systems
 import frc.robot.systems.DriveFSMSystem;
 // import frc.robot.systems.Mech1FSMSystem;
@@ -27,11 +25,8 @@ import frc.robot.systems.DriveFSMSystem;
  */
 public class Robot extends TimedRobot {
 	private TeleopInput input;
-	private TunerConstants constants;
 	// Systems
 	private DriveFSMSystem driveSystem;
-	private CommandSwerveDrivetrain swerveDrivetrain;
-	private AutoFactory autoFactory;
 	private AutoRoutines autoRoutines;
 	private SendableChooser<Command> autoChooser = new SendableChooser<Command>();
 	private Command autoWorkflow;
@@ -41,7 +36,15 @@ public class Robot extends TimedRobot {
 	// private AutoHandlerSystem autoHandler;
 
 	private static final Object[] PATH_1 = new Object[] {
-		"S1_R2", "R2_Station"
+		"S1_R2",
+		AutoCommands.B_ALIGN_REEF2_L_TAG_CMD,
+		// score_command,
+		"R2_StationL",
+		AutoCommands.B_ALIGN_STATION_L_TAG_CMD,
+		// intake_command,
+		new Object[] {"StationL_R3", AutoCommands.DRIVE_BRAKE_CMD},
+		AutoCommands.B_ALIGN_REEF3_L_TAG_CMD,
+		//score_command
 	};
 
 	/**

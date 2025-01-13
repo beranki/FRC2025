@@ -7,10 +7,10 @@ public class AutoConstants {
 	public static final double SOURCE_X_OFFSET = 0;
 	public static final double SOURCE_Y_OFFSET = 0;
 
-	public static final double BLUE_L_STATION_ID = 1;
-	public static final double BLUE_R_STATION_ID = 1;
-	public static final double RED_L_STATION_ID = 2;
-	public static final double RED_R_STATION_ID = 2;
+	public static final int BLUE_L_STATION_ID = 1;
+	public static final int BLUE_R_STATION_ID = 1;
+	public static final int RED_L_STATION_ID = 2;
+	public static final int RED_R_STATION_ID = 2;
 
 	/* -- ALL REEF SPECIFIC CONSTANTS -- */
 	public static final double REEF_X_L_TAG_OFFSET = -0.5;
@@ -33,25 +33,34 @@ public class AutoConstants {
 	public static final int B_REEF_6_TAG_ID = 9;
 
 	/* -- ALL COMMAND NAME CONSTANTS -- */
-	public static final String R_ALIGN_REEF2_L_TAG_CMD = "R_ALIGN_REEF2_L_TAG";
-	public static final String R_ALIGN_REEF2_R_TAG_CMD = "R_ALIGN_REEF2_R_TAG";
-	public static final String R_ALIGN_REEF3_L_TAG_CMD = "R_ALIGN_REEF3_L_TAG";
-	public static final String R_ALIGN_REEF3_R_TAG_CMD = "R_ALIGN_REEF3_R_TAG";
-	public static final String R_ALIGN_REEF5_L_TAG_CMD = "R_ALIGN_REEF5_L_TAG";
-	public static final String R_ALIGN_REEF5_R_TAG_CMD = "R_ALIGN_REEF5_R_TAG";
-	public static final String R_ALIGN_REEF6_L_TAG_CMD = "R_ALIGN_REEF6_L_TAG";
-	public static final String R_ALIGN_REEF6_R_TAG_CMD = "R_ALIGN_REEF6_R_TAG";
 
-	public static final String B_ALIGN_REEF2_L_TAG_CMD = "B_ALIGN_REEF2_L_TAG";
-	public static final String B_ALIGN_REEF2_R_TAG_CMD = "B_ALIGN_REEF2_R_TAG";
-	public static final String B_ALIGN_REEF3_L_TAG_CMD = "B_ALIGN_REEF3_L_TAG";
-	public static final String B_ALIGN_REEF3_R_TAG_CMD = "B_ALIGN_REEF3_R_TAG";
-	public static final String B_ALIGN_REEF5_L_TAG_CMD = "B_ALIGN_REEF5_L_TAG";
-	public static final String B_ALIGN_REEF5_R_TAG_CMD = "B_ALIGN_REEF5_R_TAG";
-	public static final String B_ALIGN_REEF6_L_TAG_CMD = "B_ALIGN_REEF6_L_TAG";
-	public static final String B_ALIGN_REEF6_R_TAG_CMD = "B_ALIGN_REEF6_R_TAG";
-
-	public static final String DRIVE_BRAKE_CMD = "Drive_Brake";
+	public enum AutoCommands {
+		/* Red Align Reef Tag Commands */
+		R_ALIGN_REEF2_L_TAG_CMD,
+		R_ALIGN_REEF2_R_TAG_CMD,
+		R_ALIGN_REEF3_L_TAG_CMD,
+		R_ALIGN_REEF3_R_TAG_CMD,
+		R_ALIGN_REEF5_L_TAG_CMD,
+		R_ALIGN_REEF5_R_TAG_CMD,
+		R_ALIGN_REEF6_L_TAG_CMD,
+		R_ALIGN_REEF6_R_TAG_CMD,
+		/* Blue Align Reef Tag Commands */
+		B_ALIGN_REEF2_L_TAG_CMD,
+		B_ALIGN_REEF2_R_TAG_CMD,
+		B_ALIGN_REEF3_L_TAG_CMD,
+		B_ALIGN_REEF3_R_TAG_CMD,
+		B_ALIGN_REEF5_L_TAG_CMD,
+		B_ALIGN_REEF5_R_TAG_CMD,
+		B_ALIGN_REEF6_L_TAG_CMD,
+		B_ALIGN_REEF6_R_TAG_CMD,
+		/* Red Align Station Tag Commands */
+		R_ALIGN_STATION_L_TAG_CMD,
+		R_ALIGN_STATION_R_TAG_CMD,
+		B_ALIGN_STATION_L_TAG_CMD,
+		B_ALIGN_STATION_R_TAG_CMD,
+		/* Drive Peripheral Commands */
+		DRIVE_BRAKE_CMD,
+	}
 
 }
 

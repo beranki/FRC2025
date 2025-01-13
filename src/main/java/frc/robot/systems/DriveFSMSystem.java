@@ -2,9 +2,9 @@ package frc.robot.systems;
 
 // WPILib Imports
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import static edu.wpi.first.units.Units.MetersPerSecond;
@@ -34,10 +34,7 @@ public class DriveFSMSystem extends SubsystemBase {
 		TELEOP_STATE,
 	}
 
-	private final SlewRateLimiter xLimiter = new SlewRateLimiter(2);
-	private final SlewRateLimiter yLimiter = new SlewRateLimiter(0.5);
-	private final SlewRateLimiter rotLimiter = new SlewRateLimiter(0.5);
-	private final double maxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
+	private final double maxSpeed = TunerConstants.SPEED_AT_12_VOLTS.in(MetersPerSecond);
 		// kSpeedAt12Volts desired top speed
 	private final double maxAngularRate =
 		RotationsPerSecond.of(DriveConstants.MAX_ANGULAR_VELO_RPS).in(RadiansPerSecond);
@@ -220,7 +217,7 @@ public class DriveFSMSystem extends SubsystemBase {
 	}
 
 	/**
-	 * Command to align to any visible tags or not move if none are seen.
+	 * Command to align to any visible reef tags or not move if none are seen.
 	 * @param xOffset
 	 * @param tagID
 	 * @param yOffset
@@ -292,5 +289,16 @@ public class DriveFSMSystem extends SubsystemBase {
 		}
 
 		return new AlignToReefTagCommand(tagID, xOffset, yOffset);
+	}
+
+	/**
+	 * Command to align to visible source tags.
+	 * @param stationID
+	 * @param xOffset
+	 * @param yOffset
+	 * @return align to station tag command.
+	 */
+	public Command alignToSourceTagCommand(int stationID, double xOffset, double yOffset) {
+		return Commands.none();
 	}
 }

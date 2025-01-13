@@ -8,8 +8,10 @@ import choreo.auto.AutoRoutine;
 import choreo.auto.AutoTrajectory;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import frc.robot.constants.AutoConstants;
+import frc.robot.constants.AutoConstants.AutoCommands;
 import frc.robot.systems.DriveFSMSystem;
 
 public class AutoRoutines {
@@ -23,8 +25,8 @@ public class AutoRoutines {
 	private AutoRoutine sysRoutine;
 
 	private HashMap<String, AutoTrajectory> paths;
-	private HashMap<String, Command> commands;
-	private String[] currentAutoState;
+	private HashMap<AutoCommands, Command> commands;
+	private Object[] currentAutoState;
 
 	/**
 	 * Constructs an AutoRoutines object with the specified AutoFactory.
@@ -37,7 +39,7 @@ public class AutoRoutines {
 		sysRoutine = autoFactory.newRoutine("AutoRoutine");
 
 		paths = new HashMap<String, AutoTrajectory>();
-		commands = new HashMap<String, Command>();
+		commands = new HashMap<AutoCommands, Command>();
 
 		setupCommands();
 		generateSysRoutineMap("src/main/deploy");
@@ -50,7 +52,7 @@ public class AutoRoutines {
 	 */
 	public AutoRoutine generateSequentialAutoWorkflow(Object[] autoStageSupply) {
 
-		Command seqInstruction = Commands.none();
+		SequentialCommandGroup seqInstruction = new SequentialCommandGroup();
 
 		for (int i = 0; i < autoStageSupply.length; i++) {
 			var autoStage = autoStageSupply[i];
@@ -60,61 +62,69 @@ public class AutoRoutines {
 				if (paths.containsKey(autoStage)) {
 					AutoTrajectory traj = paths.get(autoStage);
 					if (i == 0) {
-						seqInstruction = traj.resetOdometry();
+						seqInstruction.addCommands(traj.resetOdometry());
 					}
 
-					seqInstruction
-						.andThen(traj.cmd())
-						.alongWith(getAutoLogCommand(new String[] {(String) autoStage}));
-
-				/* -- Processing commands -- */
-				} else if (commands.containsKey(autoStage)) {
-					if (i == 0) {
-						seqInstruction = commands.get(autoStage);
-					} else {
-						seqInstruction = seqInstruction.andThen(commands.get(autoStage));
-					}
-
-					seqInstruction
-						.alongWith(getAutoLogCommand(new String[] {(String) autoStage}));
+					seqInstruction.addCommands(
+						traj.cmd()
+						.alongWith(getAutoLogCommand(new String[] {(String) autoStage}))
+					);
 				} else {
 					throw new IllegalStateException(
-						"Unknown command/trajectory in sequential stage supply."
+						"Unknown trajectory in sequential stage supply."
 					);
 				}
-			} else if (autoStage.getClass().equals(String[].class)) {
+			} else if (autoStage.getClass().equals(AutoCommands.class)) {
+				/* -- Processing commands -- */
+				if (commands.containsKey(autoStage)) {
+					seqInstruction.addCommands(
+						commands.get(autoStage)
+						.alongWith(getAutoLogCommand(new String[] {autoStage.toString()}))
+					);
+				} else {
+					throw new IllegalStateException(
+						"Unknown command in sequential stage supply."
+					);
+				}
+			} else if (autoStage.getClass().equals(Object[].class)) {
 
-				Command parallelQueue = Commands.none();
+				ParallelCommandGroup parallelQueue = new ParallelCommandGroup();
 
-				for (String autoParallelStage: (String[]) autoStage) {
+				for (Object autoParallelStage: (Object[]) autoStage) {
 
 					/* -- Processing drive trajs -- */
-					if (paths.containsKey(autoParallelStage)) {
-						AutoTrajectory traj = paths.get(autoStage);
-						if (i == 0) {
-							parallelQueue = traj.resetOdometry();
-						}
+					if (autoParallelStage.getClass().equals(String.class)) {
+						if (paths.containsKey(autoParallelStage)) {
+							AutoTrajectory traj = paths.get(autoParallelStage);
+							if (i == 0) {
+								parallelQueue.addCommands(traj.resetOdometry());
+							}
 
-						parallelQueue.alongWith(traj.cmd());
-
-					/* -- Processing commands -- */
-					} else if (commands.containsKey(autoParallelStage)) {
-						if (i == 0) {
-							parallelQueue = commands.get(autoParallelStage);
+							parallelQueue.addCommands(traj.cmd());
 						} else {
-							parallelQueue.alongWith(commands.get(autoParallelStage));
+							throw new IllegalStateException(
+								"Unknown trajectory in parallel stage supply."
+							);
 						}
-					} else {
-						throw new IllegalStateException(
-							"Unknown command/trajectory in parallel stage supply."
-						);
+					/* -- Processing commands -- */
+					} else if (autoParallelStage.getClass().equals(AutoCommands.class)) {
+						if (commands.containsKey(autoParallelStage)) {
+							parallelQueue.addCommands(commands.get(autoParallelStage));
+						} else {
+							throw new IllegalStateException(
+								"Unknown command in parallel stage supply."
+							);
+						}
 					}
 				}
 
-				seqInstruction = seqInstruction
-						.andThen(parallelQueue)
-						.alongWith(getAutoLogCommand((String[]) autoStage));
+				parallelQueue.addCommands(getAutoLogCommand((Object[]) autoStage));
+				seqInstruction.addCommands(parallelQueue);
 
+			} else {
+				throw new IllegalStateException(
+					"Unknown parameter in stage supply."
+				);
 			}
 		}
 
@@ -126,6 +136,7 @@ public class AutoRoutines {
 		return sysRoutine;
 	}
 
+	// This function works
 	private void generateSysRoutineMap(String deployFolder) {
 		File deployDir = new File(deployFolder + "/choreo");
 
@@ -138,13 +149,13 @@ public class AutoRoutines {
 		}
 	}
 
-	private Command getAutoLogCommand(String[] cAutoState) {
+	private Command getAutoLogCommand(Object[] cAutoState) {
 		class AutoLogCommand extends Command {
 
 			@Override
 			public boolean isFinished() {
 				currentAutoState = cAutoState;
-				SmartDashboard.putStringArray("Auto State", currentAutoState);
+				SmartDashboard.putString("Auto State", currentAutoState.toString());
 				return true;
 			}
 		}
@@ -152,140 +163,142 @@ public class AutoRoutines {
 		return new AutoLogCommand();
 	}
 
+	// This function works
 	private void setupCommands() {
 		/* ---- All Red AprilTag Alignment Commands ---- */
 
-		commands.put(AutoConstants.R_ALIGN_REEF2_L_TAG_CMD,
+		commands.put(AutoCommands.R_ALIGN_REEF2_L_TAG_CMD,
 			driveSystem.alignToReefTagCommand(
 					AutoConstants.R_REEF_2_TAG_ID,
 					AutoConstants.REEF_X_L_TAG_OFFSET,
 					AutoConstants.REEF_Y_L_TAG_OFFSET)
 		);
-		commands.put(AutoConstants.R_ALIGN_REEF2_R_TAG_CMD,
+		commands.put(AutoCommands.R_ALIGN_REEF2_R_TAG_CMD,
 			driveSystem.alignToReefTagCommand(
 					AutoConstants.R_REEF_2_TAG_ID,
 					AutoConstants.REEF_X_R_TAG_OFFSET,
 					AutoConstants.REEF_Y_R_TAG_OFFSET)
 		);
-		commands.put(AutoConstants.R_ALIGN_REEF3_L_TAG_CMD,
+		commands.put(AutoCommands.R_ALIGN_REEF3_L_TAG_CMD,
 			driveSystem.alignToReefTagCommand(
 					AutoConstants.R_REEF_3_TAG_ID,
 					AutoConstants.REEF_X_L_TAG_OFFSET,
 					AutoConstants.REEF_Y_L_TAG_OFFSET)
 		);
-		commands.put(AutoConstants.R_ALIGN_REEF3_R_TAG_CMD,
+		commands.put(AutoCommands.R_ALIGN_REEF3_R_TAG_CMD,
 			driveSystem.alignToReefTagCommand(
 					AutoConstants.R_REEF_3_TAG_ID,
 					AutoConstants.REEF_X_R_TAG_OFFSET,
 					AutoConstants.REEF_Y_R_TAG_OFFSET)
 		);
-		commands.put(AutoConstants.R_ALIGN_REEF5_L_TAG_CMD,
+		commands.put(AutoCommands.R_ALIGN_REEF5_L_TAG_CMD,
 			driveSystem.alignToReefTagCommand(
 					AutoConstants.R_REEF_5_TAG_ID,
 					AutoConstants.REEF_X_L_TAG_OFFSET,
 					AutoConstants.REEF_Y_L_TAG_OFFSET)
 		);
-		commands.put(AutoConstants.R_ALIGN_REEF5_R_TAG_CMD,
+		commands.put(AutoCommands.R_ALIGN_REEF5_R_TAG_CMD,
 			driveSystem.alignToReefTagCommand(
 					AutoConstants.R_REEF_5_TAG_ID,
 					AutoConstants.REEF_X_R_TAG_OFFSET,
 					AutoConstants.REEF_Y_R_TAG_OFFSET)
 		);
-		commands.put(AutoConstants.R_ALIGN_REEF6_L_TAG_CMD,
+		commands.put(AutoCommands.R_ALIGN_REEF6_L_TAG_CMD,
 			driveSystem.alignToReefTagCommand(
 					AutoConstants.R_REEF_5_TAG_ID,
 					AutoConstants.REEF_X_L_TAG_OFFSET,
 					AutoConstants.REEF_Y_L_TAG_OFFSET)
 		);
-		commands.put(AutoConstants.R_ALIGN_REEF6_R_TAG_CMD,
+		commands.put(AutoCommands.R_ALIGN_REEF6_R_TAG_CMD,
 			driveSystem.alignToReefTagCommand(
 					AutoConstants.R_REEF_5_TAG_ID,
 					AutoConstants.REEF_X_R_TAG_OFFSET,
 					AutoConstants.REEF_Y_R_TAG_OFFSET)
 		);
-		// commands.put(AutoConstants.R_ALIGN_STATION_L_TAG_CMD,
-		// 	driveSystem.alignToSourceTagCommand(
-		// 			AutoConstants.RED_L_STATION_ID,
-		// 			AutoConstants.SOURCE_X_OFFSET,
-		// 			AutoConstants.SOURCE_Y_OFFSET)
-		// 	);
-		// commands.put(AutoConstants.R_ALIGN_STATION_R_TAG_CMD,
-		// 	driveSystem.alignToSourceTagCommand(
-		// 			AutoConstants.RED_R_STATION_ID,
-		// 			AutoConstants.SOURCE_X_OFFSET,
-		// 			AutoConstants.SOURCE_Y_OFFSET)
-		// 	);
+		commands.put(AutoCommands.R_ALIGN_STATION_L_TAG_CMD,
+			driveSystem.alignToSourceTagCommand(
+					AutoConstants.RED_L_STATION_ID,
+					AutoConstants.SOURCE_X_OFFSET,
+					AutoConstants.SOURCE_Y_OFFSET)
+		);
+		commands.put(AutoCommands.R_ALIGN_STATION_R_TAG_CMD,
+			driveSystem.alignToSourceTagCommand(
+					AutoConstants.RED_R_STATION_ID,
+					AutoConstants.SOURCE_X_OFFSET,
+					AutoConstants.SOURCE_Y_OFFSET)
+		);
 
 		/* ---- All Blue AprilTag Alignment Commands ---- */
 
-		commands.put(AutoConstants.B_ALIGN_REEF2_L_TAG_CMD,
+		commands.put(AutoCommands.B_ALIGN_REEF2_L_TAG_CMD,
 			driveSystem.alignToReefTagCommand(
 					AutoConstants.B_REEF_2_TAG_ID,
 					AutoConstants.REEF_X_L_TAG_OFFSET,
 					AutoConstants.REEF_Y_L_TAG_OFFSET)
 		);
-		commands.put(AutoConstants.B_ALIGN_REEF2_R_TAG_CMD,
+		commands.put(AutoCommands.B_ALIGN_REEF2_R_TAG_CMD,
 			driveSystem.alignToReefTagCommand(
 					AutoConstants.B_REEF_2_TAG_ID,
 					AutoConstants.REEF_X_R_TAG_OFFSET,
 					AutoConstants.REEF_Y_R_TAG_OFFSET)
 		);
-		commands.put(AutoConstants.B_ALIGN_REEF3_L_TAG_CMD,
+		commands.put(AutoCommands.B_ALIGN_REEF3_L_TAG_CMD,
 			driveSystem.alignToReefTagCommand(
 					AutoConstants.B_REEF_3_TAG_ID,
 					AutoConstants.REEF_X_L_TAG_OFFSET,
 					AutoConstants.REEF_Y_L_TAG_OFFSET)
 		);
-		commands.put(AutoConstants.B_ALIGN_REEF3_R_TAG_CMD,
+		commands.put(AutoCommands.B_ALIGN_REEF3_R_TAG_CMD,
 			driveSystem.alignToReefTagCommand(
 					AutoConstants.B_REEF_3_TAG_ID,
 					AutoConstants.REEF_X_R_TAG_OFFSET,
 					AutoConstants.REEF_Y_R_TAG_OFFSET)
 		);
-		commands.put(AutoConstants.B_ALIGN_REEF5_L_TAG_CMD,
+		commands.put(AutoCommands.B_ALIGN_REEF5_L_TAG_CMD,
 			driveSystem.alignToReefTagCommand(
 					AutoConstants.B_REEF_5_TAG_ID,
 					AutoConstants.REEF_X_L_TAG_OFFSET,
 					AutoConstants.REEF_Y_L_TAG_OFFSET)
 		);
-		commands.put(AutoConstants.B_ALIGN_REEF5_R_TAG_CMD,
+		commands.put(AutoCommands.B_ALIGN_REEF5_R_TAG_CMD,
 			driveSystem.alignToReefTagCommand(
 					AutoConstants.B_REEF_5_TAG_ID,
 					AutoConstants.REEF_X_R_TAG_OFFSET,
 					AutoConstants.REEF_Y_R_TAG_OFFSET)
 		);
-		commands.put(AutoConstants.B_ALIGN_REEF6_L_TAG_CMD,
+		commands.put(AutoCommands.B_ALIGN_REEF6_L_TAG_CMD,
 			driveSystem.alignToReefTagCommand(
 					AutoConstants.B_REEF_5_TAG_ID,
 					AutoConstants.REEF_X_L_TAG_OFFSET,
 					AutoConstants.REEF_Y_L_TAG_OFFSET)
 		);
-		commands.put(AutoConstants.B_ALIGN_REEF6_R_TAG_CMD,
+		commands.put(AutoCommands.B_ALIGN_REEF6_R_TAG_CMD,
 			driveSystem.alignToReefTagCommand(
 					AutoConstants.B_REEF_5_TAG_ID,
 					AutoConstants.REEF_X_R_TAG_OFFSET,
 					AutoConstants.REEF_Y_R_TAG_OFFSET)
 		);
-		// commands.put(AutoConstants.B_ALIGN_STATION_L_TAG_CMD,
-		// 	driveSystem.alignToSourceTagCommand(
-		// 			AutoConstants.BLUE_L_STATION_ID,
-		// 			AutoConstants.SOURCE_X_OFFSET,
-		// 			AutoConstants.SOURCE_Y_OFFSET)
-		// 	);
-		// commands.put(AutoConstants.B_ALIGN_STATION_R_TAG_CMD,
-		// 	driveSystem.alignToSourceTagCommand(
-		// 			AutoConstants.BLUE_R_STATION_ID,
-		// 			AutoConstants.SOURCE_X_OFFSET,
-		// 			AutoConstants.SOURCE_Y_OFFSET)
-		// 	);
+		commands.put(AutoCommands.B_ALIGN_STATION_L_TAG_CMD,
+			driveSystem.alignToSourceTagCommand(
+					AutoConstants.BLUE_L_STATION_ID,
+					AutoConstants.SOURCE_X_OFFSET,
+					AutoConstants.SOURCE_Y_OFFSET)
+		);
+		commands.put(AutoCommands.B_ALIGN_STATION_R_TAG_CMD,
+			driveSystem.alignToSourceTagCommand(
+					AutoConstants.BLUE_R_STATION_ID,
+					AutoConstants.SOURCE_X_OFFSET,
+					AutoConstants.SOURCE_Y_OFFSET)
+		);
 
 		/* ---- All Drive Commands ---- */
-		commands.put(AutoConstants.DRIVE_BRAKE_CMD,
+		commands.put(AutoCommands.DRIVE_BRAKE_CMD,
 			driveSystem.brakeCommand()
 		);
 
 		/* ---- All Elevator Commands ---- */
 
 		/* ---- All Intake Commands ---- */
+
 	}
 }

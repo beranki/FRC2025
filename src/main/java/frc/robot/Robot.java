@@ -140,7 +140,10 @@ public class Robot extends TimedRobot {
 	}
 
 	@Override
-	public void simulationPeriodic() { }
+	public void simulationPeriodic() {
+		// Log this
+		driveSystem.getMapleSimDrive().getSimulatedDriveTrainPose();
+	}
 
 	// Do not use robotPeriodic. Use mode specific periodic methods instead.
 	@Override

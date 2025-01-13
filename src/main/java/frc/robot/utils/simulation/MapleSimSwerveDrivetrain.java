@@ -12,11 +12,11 @@ import com.ctre.phoenix6.sim.TalonFXSimState;
 import com.ctre.phoenix6.swerve.SwerveModule;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 
+import edu.wpi.first.math.Pair;
 // WPI Imports
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.system.plant.DCMotor;
-import edu.wpi.first.wpilibj.RobotBase;
 
 // Measures
 import edu.wpi.first.units.measure.Angle;
@@ -42,6 +42,7 @@ import org.ironmaple.simulation.drivesims.configs.SwerveModuleSimulationConfig;
 import org.ironmaple.simulation.motorsims.SimulatedBattery;
 import org.ironmaple.simulation.motorsims.SimulatedMotorController;
 
+import frc.robot.Robot;
 // Local Imports
 import frc.robot.constants.SimConstants;
 
@@ -64,14 +65,10 @@ public class MapleSimSwerveDrivetrain {
 	 *
 	 * @param simPeriod the time period of the simulation
 	 * @param robotMassWithBumpers the total mass of the robot, including bumpers
-	 * @param bumperLengthX the length of the bumper along the X-axis
+	 * @param bumperLengths pair of the lengths of bumpers, first X second Y
 	 * (influences the collision space of the robot)
-	 * @param bumperWidthY the width of the bumper along the Y-axis
-	 * (influences the collision space of the robot)
-	 * @param driveMotorModel the {@link DCMotor} model for the drive motor,
-	 * typically <code>DCMotor.getKrakenX60Foc()</code>
-	 * @param steerMotorModel the {@link DCMotor} model for the steer motor,
-	 * typically <code>DCMotor.getKrakenX60Foc()</code>
+	 * @param moduleMotors pair of the motors in the modules, first drive second steer
+	 * typically <code>DCMotor.getKrakenX60()</code>
 	 * @param wheelCOF the coefficient of friction of the drive wheels
 	 * @param moduleLocations the locations of the swerve modules on the robot,
 	 * in the order <code>FL, FR, BL, BR</code>
@@ -80,13 +77,12 @@ public class MapleSimSwerveDrivetrain {
 	 * {@link SwerveDrivetrain#getModules()}
 	 * @param moduleConstants the constants for the swerve modules
 	 */
+	@SuppressWarnings("unchecked")
 	public MapleSimSwerveDrivetrain(
 			Time simPeriod,
 			Mass robotMassWithBumpers,
-			Distance bumperLengthX,
-			Distance bumperWidthY,
-			DCMotor driveMotorModel,
-			DCMotor steerMotorModel,
+			Pair<Distance, Distance> bumperLengths,
+			Pair<DCMotor, DCMotor> moduleMotors,
 			double wheelCOF,
 			Translation2d[] moduleLocations,
 			Pigeon2 pigeon,
@@ -99,12 +95,12 @@ public class MapleSimSwerveDrivetrain {
 		simModules = new SimSwerveModule[moduleConstants.length];
 		DriveTrainSimulationConfig simulationConfig = DriveTrainSimulationConfig.Default()
 				.withRobotMass(robotMassWithBumpers)
-				.withBumperSize(bumperLengthX, bumperWidthY)
+				.withBumperSize(bumperLengths.getFirst(), bumperLengths.getSecond())
 				.withGyro(COTS.ofPigeon2())
 				.withCustomModuleTranslations(moduleLocations)
 				.withSwerveModule(new SwerveModuleSimulationConfig(
-						driveMotorModel,
-						steerMotorModel,
+						moduleMotors.getFirst(),
+						moduleMotors.getSecond(),
 						moduleConstants[0].DriveMotorGearRatio,
 						moduleConstants[0].SteerMotorGearRatio,
 						Volts.of(moduleConstants[0].DriveFrictionVoltage),
@@ -170,6 +166,11 @@ public class MapleSimSwerveDrivetrain {
 			moduleSimulation.useSteerMotorController(
 					new TalonFXMotorControllerWithRemoteCanCoderSim(
 						module.getSteerMotor(), module.getEncoder()));
+		}
+
+		public SwerveModuleConstants<TalonFXConfiguration, TalonFXConfiguration,
+			CANcoderConfiguration> getModuleConstants() {
+			return moduleConstant;
 		}
 	}
 
@@ -242,6 +243,13 @@ public class MapleSimSwerveDrivetrain {
 			return super.updateControlSignal(
 				mechanismAngle, mechanismVelocity, encoderAngle, encoderVelocity);
 		}
+		/**
+		 * Get the identifier of the encoder paired with this motor.
+		 * @return the identifier of this sim motor
+		 */
+		public int getEncoderID() {
+			return encoderId;
+		}
 	}
 
 	/**
@@ -272,7 +280,7 @@ public class MapleSimSwerveDrivetrain {
 	 * known simulation bugs:
 	 *
 	 * <ul>
-	 *     <li><b>Inverted Drive Motors:</b>
+	 *     <li><strong>Inverted Drive Motors:</strong>
 	 * 			Prevents drive PID issues caused by inverted configurations.</li>
 	 *     <li><strong>Non-zero CanCoder Offsets:</strong>
 	 * 			Fixes potential module state optimization issues.</li>
@@ -288,7 +296,7 @@ public class MapleSimSwerveDrivetrain {
 	private static void regulateModuleConstantForSimulation(
 		SwerveModuleConstants<?, ?, ?> moduleConstants) {
 		// Skip regulation if running on a real robot
-		if (RobotBase.isReal()) {
+		if (Robot.isReal()) {
 			return;
 		}
 
@@ -311,5 +319,4 @@ public class MapleSimSwerveDrivetrain {
 				// Adjust steer inertia
 				.withSteerInertia(KilogramSquareMeters.of(SimConstants.STEER_INERTIA_KGMS2));
 	}
-
 }

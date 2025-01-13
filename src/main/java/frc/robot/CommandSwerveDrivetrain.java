@@ -4,6 +4,8 @@ import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Pounds;
 import static edu.wpi.first.units.Units.Seconds;
 
+import com.ctre.phoenix6.configs.CANcoderConfiguration;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.swerve.SwerveDrivetrain;
@@ -22,6 +24,7 @@ import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Subsystem;
+import frc.robot.constants.RobotConstants;
 import frc.robot.constants.SimConstants;
 import frc.robot.constants.TunerConstants;
 import frc.robot.utils.simulation.MapleSimSwerveDrivetrain;
@@ -61,7 +64,10 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
 	@SuppressWarnings("unchecked")
 	public CommandSwerveDrivetrain(
 		SwerveDrivetrainConstants drivetrainConstants,
-		SwerveModuleConstants<TalonFX, TalonFX, CANcoder>... modules
+		SwerveModuleConstants<
+			TalonFXConfiguration,
+			TalonFXConfiguration,
+			CANcoderConfiguration>... modules
 	) {
 		super(
 			TalonFX::new, TalonFX::new, CANcoder::new,
@@ -130,12 +136,12 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
 	private void setupSimulation() {
 		mapleSimSwerveDrivetrain = new MapleSimSwerveDrivetrain(
 			Seconds.of(SimConstants.SIM_LOOP_PERIOD),
-			Pounds.of(115),
-			Inches.of(30),
-			Inches.of(30),
+			Pounds.of(RobotConstants.MASS_WITH_BUMPER_LBS),
+			Inches.of(RobotConstants.LENGTH_IN),
+			Inches.of(RobotConstants.WIDTH_IN),
 			DCMotor.getKrakenX60(1),
 			DCMotor.getKrakenX60(1),
-			1.2,
+			RobotConstants.WHEEL_COF,
 			getModuleLocations(),
 			getPigeon2(),
 			getModules(),

@@ -3,13 +3,24 @@
 // the WPILib BSD license file in the root directory of this project.
 package frc.robot;
 
+import org.littletonrobotics.junction.LogFileUtil;
+// Third Party Imports
+import org.littletonrobotics.junction.LoggedRobot;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.NT4Publisher;
+import org.littletonrobotics.junction.wpilog.WPILOGReader;
+import org.littletonrobotics.junction.wpilog.WPILOGWriter;
+
+import edu.wpi.first.wpilibj.PowerDistribution;
+import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
+
 // WPILib Imports
-import edu.wpi.first.wpilibj.TimedRobot;
+
 
 // Systems
 import frc.robot.systems.DriveFSMSystem;
-import frc.robot.systems.Mech1FSMSystem;
-import frc.robot.systems.Mech2FSMSystem;
+import frc.robot.systems.FunnelFSMSystem;
+import frc.robot.systems.ElevatorFSMSystem;
 import frc.robot.systems.AutoHandlerSystem;
 import frc.robot.systems.AutoHandlerSystem.AutoPath;
 
@@ -17,15 +28,18 @@ import frc.robot.systems.AutoHandlerSystem.AutoPath;
  * The VM is configured to automatically run this class, and to call the functions corresponding to
  * each mode, as described in the TimedRobot documentation.
  */
-public class Robot extends TimedRobot {
+public class Robot extends LoggedRobot {
 	private TeleopInput input;
 
 	// Systems
 	private DriveFSMSystem driveSystem;
-	private Mech1FSMSystem mech1System;
-	private Mech2FSMSystem mech2System;
+	private FunnelFSMSystem funnelSystem;
+	private ElevatorFSMSystem elevatorSystem;
 
 	private AutoHandlerSystem autoHandler;
+
+	// Logger
+	private PowerDistribution powerLogger;
 
 	/**
 	 * This function is run when the robot is first started up and should be used for any
@@ -34,6 +48,25 @@ public class Robot extends TimedRobot {
 	@Override
 	public void robotInit() {
 		System.out.println("robotInit");
+
+		Logger.recordMetadata("FRC2025", "Team2473"); // Set a metadata value
+
+		if (isReal()) {
+			Logger.addDataReceiver(new WPILOGWriter()); // Log to a USB stick ("/U/logs")
+			Logger.addDataReceiver(new NT4Publisher()); // Publish data to NetworkTables
+			powerLogger = new PowerDistribution(1, ModuleType.kRev);
+				// Enables power distribution logging
+		} else if (isSimulation()) {
+			Logger.addDataReceiver(new NT4Publisher());
+		} else {
+			setUseTiming(false); // Run as fast as possible
+			String logPath = LogFileUtil.findReplayLog(); // Pull the replay log from AdvantageScope
+			Logger.setReplaySource(new WPILOGReader(logPath)); // Read replay log
+			Logger.addDataReceiver(new WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_sim")));
+		}
+
+		Logger.start(); // Start logging!
+
 		input = new TeleopInput();
 
 		// Instantiate all systems here
@@ -41,14 +74,16 @@ public class Robot extends TimedRobot {
 			driveSystem = new DriveFSMSystem();
 		}
 
-		if (HardwareMap.isMech1HardwarePresent()) {
-			mech1System = new Mech1FSMSystem();
+		if (HardwareMap.isElevatorHardwarePresent()) {
+			elevatorSystem = new ElevatorFSMSystem();
 		}
 
-		if (HardwareMap.isMech2HardwarePresent()) {
-			mech2System = new Mech2FSMSystem();
+		if (HardwareMap.isFunnelHardwarePresent()) {
+			funnelSystem = new FunnelFSMSystem();
 		}
-		autoHandler = new AutoHandlerSystem(driveSystem, mech1System, mech2System);
+
+		// might cause issues down the line if some arguments are null
+		autoHandler = new AutoHandlerSystem(driveSystem, funnelSystem, elevatorSystem);
 	}
 
 	@Override
@@ -65,21 +100,37 @@ public class Robot extends TimedRobot {
 	@Override
 	public void teleopInit() {
 		System.out.println("-------- Teleop Init --------");
-		driveSystem.reset();
-		mech1System.reset();
-		mech2System.reset();
+		if (driveSystem != null) {
+			driveSystem.reset();
+		}
+		if (funnelSystem != null) {
+			funnelSystem.reset();
+		}
+		if (elevatorSystem != null) {
+			elevatorSystem.reset();
+		}
 	}
 
 	@Override
 	public void teleopPeriodic() {
-		driveSystem.update(input);
-		mech1System.update(input);
-		mech2System.update(input);
+		if (driveSystem != null) {
+			driveSystem.update(input);
+		}
+		if (funnelSystem != null) {
+			funnelSystem.update(input);
+		}
+		if (elevatorSystem != null) {
+			elevatorSystem.update(input);
+		}
 	}
 
 	@Override
 	public void disabledInit() {
 		System.out.println("-------- Disabled Init --------");
+		Logger.end(); // Stop logging!
+		if (powerLogger != null) {
+			powerLogger.close();
+		}
 	}
 
 	@Override

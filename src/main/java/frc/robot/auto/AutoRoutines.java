@@ -50,7 +50,7 @@ public class AutoRoutines {
 	 * @param autoStageSupply string of commands and trajectory names
 	 * @return the auto routine
 	 */
-	public AutoRoutine generateSequentialAutoWorkflow(Object[] autoStageSupply) {
+	public SequentialCommandGroup generateSequentialAutoWorkflow(Object[] autoStageSupply) {
 
 		SequentialCommandGroup seqInstruction = new SequentialCommandGroup();
 
@@ -62,8 +62,13 @@ public class AutoRoutines {
 				if (paths.containsKey(autoStage)) {
 					AutoTrajectory traj = paths.get(autoStage);
 					if (i == 0) {
+						System.out.println("Added " + autoStage.toString()
+							+ " reset trajectory to sequential queue.");
 						seqInstruction.addCommands(traj.resetOdometry());
 					}
+
+					System.out.println("Added " + autoStage.toString()
+						+ " trajectory to sequential queue.");
 
 					seqInstruction.addCommands(
 						traj.cmd()
@@ -81,6 +86,8 @@ public class AutoRoutines {
 						commands.get(autoStage)
 						.alongWith(getAutoLogCommand(new String[] {autoStage.toString()}))
 					);
+					System.out.println("Added " + autoStage.toString()
+						+ " command to sequential queue.");
 				} else {
 					throw new IllegalStateException(
 						"Unknown command in sequential stage supply."
@@ -92,14 +99,19 @@ public class AutoRoutines {
 
 				for (Object autoParallelStage: (Object[]) autoStage) {
 
+
 					/* -- Processing drive trajs -- */
 					if (autoParallelStage.getClass().equals(String.class)) {
 						if (paths.containsKey(autoParallelStage)) {
 							AutoTrajectory traj = paths.get(autoParallelStage);
 							if (i == 0) {
 								parallelQueue.addCommands(traj.resetOdometry());
+								System.out.println("Added " + autoParallelStage.toString()
+									+ " reset odometry to parallel queue.");
 							}
 
+							System.out.println("Added " + autoParallelStage.toString()
+								+ " trajectory to parallel queue.");
 							parallelQueue.addCommands(traj.cmd());
 						} else {
 							throw new IllegalStateException(
@@ -110,6 +122,8 @@ public class AutoRoutines {
 					} else if (autoParallelStage.getClass().equals(AutoCommands.class)) {
 						if (commands.containsKey(autoParallelStage)) {
 							parallelQueue.addCommands(commands.get(autoParallelStage));
+							System.out.println("Added " + autoParallelStage.toString()
+								+ " command to parallel queue.");
 						} else {
 							throw new IllegalStateException(
 								"Unknown command in parallel stage supply."
@@ -128,12 +142,9 @@ public class AutoRoutines {
 			}
 		}
 
-		sysRoutine.active().onTrue(
-			seqInstruction
-			.andThen(driveSystem.brakeCommand())
-		);
+		seqInstruction.addCommands(driveSystem.brakeCommand());
 
-		return sysRoutine;
+		return seqInstruction;
 	}
 
 	// This function works
@@ -155,7 +166,14 @@ public class AutoRoutines {
 			@Override
 			public boolean isFinished() {
 				currentAutoState = cAutoState;
-				SmartDashboard.putString("Auto State", currentAutoState.toString());
+				StringBuilder stemp = new StringBuilder();
+				for (Object state : currentAutoState) {
+					stemp.append(state.toString()).append(", ");
+				}
+
+				System.out.println("Auto State " + stemp.toString());
+
+				SmartDashboard.putString("Auto State", stemp.toString());
 				return true;
 			}
 		}

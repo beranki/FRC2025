@@ -1,5 +1,6 @@
 package frc.robot;
 
+import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.swerve.SwerveDrivetrain;
@@ -16,6 +17,8 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.Notifier;
+import edu.wpi.first.wpilibj.RobotController;
 
 /**
  * Class that extends the Phoenix SwerveDrivetrain class and implements subsystem
@@ -23,6 +26,10 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
  */
 @SuppressWarnings("rawtypes")
 public class CommandSwerveDrivetrain extends SwerveDrivetrain {
+	private static final double SIM_LOOP_PERIOD = 0.005; // 5 ms
+	private Notifier simNotifier = null;
+	private double lastSimTime;
+
 
 	/* Blue alliance sees forward as 0 degrees (toward red alliance wall) */
 	private static final Rotation2d BLUE_ALLIANCE_PERSPECTIVE_ROTATION = Rotation2d.kZero;
@@ -57,7 +64,9 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain {
 			drivetrainConstants, modules
 		);
 
-		// setupPathplanner();
+		if (Utils.isSimulation()) {
+			startSimThread();
+		}
 	}
 
 	/**
@@ -115,9 +124,21 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain {
 		return pos;
 	}
 
-	// @Override
-	// public void simulationPeriodic() {
-	// 	/* Assume 20ms update rate, get battery voltage from WPILib */
-	// 	updateSimState(0.02, RobotController.getBatteryVoltage());
-	// }
+	/**
+	 * Update the simulation state.
+	 */
+	private void startSimThread() {
+		lastSimTime = Utils.getCurrentTimeSeconds();
+
+		/* Run simulation at a faster rate so PID gains behave more reasonably */
+		simNotifier = new Notifier(() -> {
+			final double currentTime = Utils.getCurrentTimeSeconds();
+			double deltaTime = currentTime - lastSimTime;
+			lastSimTime = currentTime;
+
+			/* use the measured time delta, get battery voltage from WPILib */
+			updateSimState(deltaTime, RobotController.getBatteryVoltage());
+		});
+		simNotifier.startPeriodic(SIM_LOOP_PERIOD);
+	}
 }

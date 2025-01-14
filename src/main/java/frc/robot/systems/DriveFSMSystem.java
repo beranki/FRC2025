@@ -207,6 +207,11 @@ public class DriveFSMSystem extends SubsystemBase {
 	public Command brakeCommand() {
 		class BrakeCommand extends Command {
 			@Override
+			public void initialize() {
+				System.out.println("Braking");
+			}
+
+			@Override
 			public boolean isFinished() {
 				drivetrain.setControl(brake);
 				return true;

@@ -3,6 +3,8 @@
 // the WPILib BSD license file in the root directory of this project.
 package frc.robot;
 
+import choreo.auto.AutoChooser;
+import choreo.auto.AutoFactory;
 // WPILib Imports
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -10,6 +12,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.auto.AutoRoutines;
+import frc.robot.auto.Routines;
 import frc.robot.constants.AutoConstants.AutoCommands;
 
 // Systems
@@ -28,7 +31,10 @@ public class Robot extends TimedRobot {
 	// Systems
 	private DriveFSMSystem driveSystem;
 	private AutoRoutines autoRoutines;
+	private AutoFactory factory;
+	private Routines routines;
 	private SendableChooser<Command> autoChooser = new SendableChooser<Command>();
+	private AutoChooser sigmaChooser = new AutoChooser();
 	private Command autoWorkflow;
 	// private Mech1FSMSystem mech1System;
 	// private Mech2FSMSystem mech2System;
@@ -37,13 +43,13 @@ public class Robot extends TimedRobot {
 
 	private static final Object[] PATH_1 = new Object[] {
 		"S1_R2",
-		AutoCommands.B_ALIGN_REEF2_L_TAG_CMD,
+		//AutoCommands.B_ALIGN_REEF2_L_TAG_CMD,
 		// score_command,
 		"R2_StationL",
-		AutoCommands.B_ALIGN_STATION_L_TAG_CMD,
+		//AutoCommands.B_ALIGN_STATION_L_TAG_CMD,
 		// intake_command,
-		new Object[] {"StationL_R3", AutoCommands.DRIVE_BRAKE_CMD},
-		AutoCommands.B_ALIGN_REEF3_L_TAG_CMD,
+		"StationL_R3",
+		//AutoCommands.B_ALIGN_REEF3_L_TAG_CMD,
 		//score_command
 	};
 
@@ -63,10 +69,14 @@ public class Robot extends TimedRobot {
 		}
 
 		autoRoutines = new AutoRoutines(driveSystem);
+		factory = driveSystem.createAutoFactory();
+		routines = new Routines(factory);
 
 		autoChooser.addOption("Path 1",
-			autoRoutines.generateSequentialAutoWorkflow(PATH_1).cmd());
-		SmartDashboard.putData("AUTO CHOOSER", autoChooser);
+			autoRoutines.generateSequentialAutoWorkflow(PATH_1));
+
+		sigmaChooser.addRoutine("PATH W THE AND THENS", routines::auto1);
+		SmartDashboard.putData("AUTO CHOOSER", sigmaChooser);
 
 	// 	if (HardwareMap.isMech1HardwarePresent()) {
 	// 		mech1System = new Mech1FSMSystem();
@@ -84,11 +94,12 @@ public class Robot extends TimedRobot {
 	public void autonomousInit() {
 		System.out.println("-------- Autonomous Init --------");
 		// autoHandler.reset(AutoPath.PATH1);
+		// autoWorkflow = getSelectedAutoRoutine();
+		// System.out.println(autoWorkflow.getName());
+		// if (autoWorkflow != null) {
+		// 	autoWorkflow.schedule();
+		// }
 		autoWorkflow = getSelectedAutoRoutine();
-
-		if (autoWorkflow != null) {
-			autoWorkflow.schedule();
-		}
 	}
 
 	@Override
@@ -140,7 +151,9 @@ public class Robot extends TimedRobot {
 	}
 
 	@Override
-	public void simulationPeriodic() { }
+	public void simulationPeriodic() {
+
+	}
 
 	// Do not use robotPeriodic. Use mode specific periodic methods instead.
 	@Override
@@ -152,6 +165,6 @@ public class Robot extends TimedRobot {
 	 * @return the selected autonomous command
 	 */
 	public Command getSelectedAutoRoutine() {
-		return autoChooser.getSelected();
+		return sigmaChooser.selectedCommand();
 	}
 }

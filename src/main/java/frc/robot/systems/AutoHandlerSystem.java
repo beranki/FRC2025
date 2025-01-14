@@ -104,7 +104,6 @@ public class AutoHandlerSystem {
 		boolean isCurrentStateFinished = true;
 		SmartDashboard.putString("Auto State", getCurrentState().toString());
 
-		isCurrentStateFinished &= driveSystem.updateAutonomous(getCurrentState());
 		isCurrentStateFinished &= elevatorSystem.updateAutonomous(getCurrentState());
 		isCurrentStateFinished &= funnelSystem.updateAutonomous(getCurrentState());
 

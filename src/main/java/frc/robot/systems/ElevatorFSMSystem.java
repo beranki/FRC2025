@@ -14,13 +14,13 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import frc.robot.Constants;
 import frc.robot.HardwareMap;
 import frc.robot.Robot;
 
 // Robot Imports
 
 import frc.robot.TeleopInput;
+import frc.robot.constants.Constants;
 import frc.robot.systems.AutoHandlerSystem.AutoFSMState;
 
 

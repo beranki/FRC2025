@@ -37,6 +37,52 @@ public class TeleopInput {
 	// Method names should be descriptive of the behavior, so the
 	// control mapping is hidden from other classes.
 
+	/* ------------------------ Drive Controller ------------------------ */
+	/**
+	 * Get X axis of Drive Controller.
+	 * @return Axis value
+	 */
+	public double getDriveLeftJoystickX() {
+		return driveController.getLeftX();
+	}
+	/**
+	 * Get Y axis of Drive Controller.
+	 * @return Axis value
+	 */
+	public double getDriveLeftJoystickY() {
+		return driveController.getLeftY();
+	}
+	/**
+	 * Get Y axis of Drive Controller.
+	 * @return Axis value
+	 */
+	public double getDriveRightJoystickX() {
+		return driveController.getRightX();
+	}
+	/**
+	 * Get Triangle Button Pressed for Drive Controller.
+	 * @return Axis value
+	 */
+	public boolean getDriveTriangleButton() {
+		return driveController.getTriangleButton();
+	}
+	/**
+	 * Get Circle Button Pressed for Drive Controller.
+	 * @return Axis value
+	 */
+	public boolean getDriveCircleButton() {
+		return driveController.getCircleButton();
+	}
+		/**
+	 * Get Share Button Pressed for Drive Controller.
+	 * @return Axis value
+	 */
+	public boolean getDriveBackButtonPressed() {
+		return driveController.getShareButton();
+	}
+
+	/* ------------------------ Mech Controller ------------------------ */
+
 	/**
 	 * Get the value of the source elevator target button (cross).
 	 * @return If the button is pressed
@@ -44,6 +90,7 @@ public class TeleopInput {
 	public boolean isStationButtonPressed() {
 		return mechController.getCrossButton();
 	}
+
 	/**
 	 * Get the value of the L4 elevator target button (triangle).
 	 * @return If the button is pressed
@@ -51,6 +98,7 @@ public class TeleopInput {
 	public boolean isL4ButtonPressed() {
 		return mechController.getTriangleButton();
 	}
+
 	/**
 	 * Get the value of the ground elevator target button (circle).
 	 * @return If the button is pressed
@@ -62,6 +110,14 @@ public class TeleopInput {
 	/**
 	 * Get the manual elevator movement input (right stick Y).
 	 * @return A double in the range [-1,1] representing the control input
+	 */
+	public double getMechLeftJoystickX() {
+		return mechController.getLeftX();
+	}
+
+	/**
+	 * Get Y axis of Right Joystick.
+	 * @return Axis value
 	 */
 	public double getManualElevatorMovementInput() {
 		return mechController.getRightY();

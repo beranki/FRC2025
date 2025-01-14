@@ -3,26 +3,30 @@
 // the WPILib BSD license file in the root directory of this project.
 package frc.robot;
 
-import org.littletonrobotics.junction.LogFileUtil;
 // Third Party Imports
+import choreo.auto.AutoChooser;
+import choreo.auto.AutoFactory;
+import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.NT4Publisher;
 import org.littletonrobotics.junction.wpilog.WPILOGReader;
 import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 
+// WPILib Imports
 import edu.wpi.first.wpilibj.PowerDistribution;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 
-// WPILib Imports
-
-
 // Systems
-import frc.robot.systems.DriveFSMSystem;
 import frc.robot.systems.FunnelFSMSystem;
 import frc.robot.systems.ElevatorFSMSystem;
-import frc.robot.systems.AutoHandlerSystem;
-import frc.robot.systems.AutoHandlerSystem.AutoPath;
+import frc.robot.systems.DriveFSMSystem;
+
+// Robot Imports
+import frc.robot.constants.TunerConstants;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -30,13 +34,18 @@ import frc.robot.systems.AutoHandlerSystem.AutoPath;
  */
 public class Robot extends LoggedRobot {
 	private TeleopInput input;
+	private TunerConstants constants;
 
 	// Systems
 	private DriveFSMSystem driveSystem;
+	private CommandSwerveDrivetrain swerveDrivetrain;
+	private AutoFactory autoFactory;
+	private AutoRoutines autoRoutines;
+	private AutoChooser autoChooser = new AutoChooser();
+	private Command autCommand;
 	private FunnelFSMSystem funnelSystem;
 	private ElevatorFSMSystem elevatorSystem;
 
-	private AutoHandlerSystem autoHandler;
 
 	// Logger
 	private PowerDistribution powerLogger;
@@ -69,10 +78,16 @@ public class Robot extends LoggedRobot {
 
 		input = new TeleopInput();
 
+
 		// Instantiate all systems here
 		if (HardwareMap.isDriveHardwarePresent()) {
 			driveSystem = new DriveFSMSystem();
 		}
+		autoFactory = driveSystem.createAutoFactory();
+		autoRoutines = new AutoRoutines(autoFactory, driveSystem);
+
+		autoChooser.addRoutine("testPath", autoRoutines::testAuto);
+		SmartDashboard.putData("AUTO CHOOSER", autoChooser);
 
 		if (HardwareMap.isElevatorHardwarePresent()) {
 			elevatorSystem = new ElevatorFSMSystem();
@@ -82,19 +97,27 @@ public class Robot extends LoggedRobot {
 			funnelSystem = new FunnelFSMSystem();
 		}
 
-		// might cause issues down the line if some arguments are null
-		autoHandler = new AutoHandlerSystem(driveSystem, funnelSystem, elevatorSystem);
+		if (HardwareMap.isDriveHardwarePresent()) {
+			driveSystem = new DriveFSMSystem();
+		}
 	}
 
 	@Override
 	public void autonomousInit() {
 		System.out.println("-------- Autonomous Init --------");
-		autoHandler.reset(AutoPath.PATH1);
+		// autoHandler.reset(AutoPath.PATH1);
+		autCommand = getAutonomousCommand();
+
+		if (autCommand != null) {
+			autCommand.schedule();
+		}
 	}
 
 	@Override
 	public void autonomousPeriodic() {
-		autoHandler.update();
+		// autoHandler.update();
+		CommandScheduler.getInstance().run();
+		driveSystem.updateAutonomous();
 	}
 
 	@Override
@@ -161,4 +184,13 @@ public class Robot extends LoggedRobot {
 	// Do not use robotPeriodic. Use mode specific periodic methods instead.
 	@Override
 	public void robotPeriodic() { }
+
+	/**
+	 * Gets the autonomous command selected by the auto chooser.
+	 *
+	 * @return the selected autonomous command
+	 */
+	public Command getAutonomousCommand() {
+		return autoChooser.selectedCommand();
+	}
 }

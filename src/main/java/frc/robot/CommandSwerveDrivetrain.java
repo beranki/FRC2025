@@ -162,6 +162,7 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
 	 * @return the sim drivetrain of the current class
 	 */
 	public MapleSimSwerveDrivetrain getSimDrivetrain() {
+		System.out.println(mapleSimSwerveDrivetrain);
 		return mapleSimSwerveDrivetrain;
 	}
 

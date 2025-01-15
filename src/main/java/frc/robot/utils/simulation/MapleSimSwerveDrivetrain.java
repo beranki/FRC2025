@@ -6,26 +6,23 @@ import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.Pigeon2;
 import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.sim.CANcoderSimState;
 import com.ctre.phoenix6.sim.Pigeon2SimState;
-import com.ctre.phoenix6.sim.TalonFXSimState;
 import com.ctre.phoenix6.swerve.SwerveModule;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 
 import edu.wpi.first.math.Pair;
 // WPI Imports
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.system.plant.DCMotor;
 
 // Measures
-import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.Mass;
 import edu.wpi.first.units.measure.Time;
-import edu.wpi.first.units.measure.Voltage;
 
+import static edu.wpi.first.units.Units.Feet;
 // Units
 import static edu.wpi.first.units.Units.KilogramSquareMeters;
 import static edu.wpi.first.units.Units.Meters;
@@ -39,12 +36,13 @@ import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 import org.ironmaple.simulation.drivesims.SwerveModuleSimulation;
 import org.ironmaple.simulation.drivesims.configs.DriveTrainSimulationConfig;
 import org.ironmaple.simulation.drivesims.configs.SwerveModuleSimulationConfig;
-import org.ironmaple.simulation.motorsims.SimulatedBattery;
-import org.ironmaple.simulation.motorsims.SimulatedMotorController;
 
-import frc.robot.Robot;
+
 // Local Imports
 import frc.robot.constants.SimConstants;
+import frc.robot.Robot;
+import static frc.robot.utils.simulation.MotorSimUtil.TalonFXMotorControllerSim;
+import static frc.robot.utils.simulation.MotorSimUtil.TalonFXMotorControllerWithRemoteCanCoderSim;;
 
 
 /**
@@ -93,7 +91,8 @@ public class MapleSimSwerveDrivetrain {
 				CANcoderConfiguration>... moduleConstants) {
 		this.pigeonSim = pigeon.getSimState();
 		simModules = new SimSwerveModule[moduleConstants.length];
-		DriveTrainSimulationConfig simulationConfig = DriveTrainSimulationConfig.Default()
+
+		var simulationConfig = DriveTrainSimulationConfig.Default()
 				.withRobotMass(robotMassWithBumpers)
 				.withBumperSize(bumperLengths.getFirst(), bumperLengths.getSecond())
 				.withGyro(COTS.ofPigeon2())
@@ -108,7 +107,17 @@ public class MapleSimSwerveDrivetrain {
 						Meters.of(moduleConstants[0].WheelRadius),
 						KilogramSquareMeters.of(moduleConstants[0].SteerInertia),
 						wheelCOF));
-		mapleSimDrive = new SwerveDriveSimulation(simulationConfig, new Pose2d());
+
+		mapleSimDrive = new SwerveDriveSimulation(
+			simulationConfig,
+			new Pose2d(
+				new Translation2d(
+					Feet.of(SimConstants.STARTING_POS_X_FT),
+					Feet.of(SimConstants.STARTING_POS_Y_FT)
+				),
+				new Rotation2d()
+			)
+		);
 
 		SwerveModuleSimulation[] moduleSimulations = mapleSimDrive.getModules();
 
@@ -171,84 +180,6 @@ public class MapleSimSwerveDrivetrain {
 		public SwerveModuleConstants<TalonFXConfiguration, TalonFXConfiguration,
 			CANcoderConfiguration> getModuleConstants() {
 			return moduleConstant;
-		}
-	}
-
-	// Static utils classes
-	public static class TalonFXMotorControllerSim implements SimulatedMotorController {
-		private final int id;
-		private final TalonFXSimState talonFXSimState;
-
-		/**
-		 * Constructs a TalonFX MotorController which uses it's sim state.
-		 * @param talonFX
-		 */
-		public TalonFXMotorControllerSim(TalonFX talonFX) {
-			this.id = talonFX.getDeviceID();
-			this.talonFXSimState = talonFX.getSimState();
-		}
-
-		@Override
-		public Voltage updateControlSignal(
-				Angle mechanismAngle,
-				AngularVelocity mechanismVelocity,
-				Angle encoderAngle,
-				AngularVelocity encoderVelocity) {
-			talonFXSimState.setRawRotorPosition(encoderAngle);
-			talonFXSimState.setRotorVelocity(encoderVelocity);
-			talonFXSimState.setSupplyVoltage(SimulatedBattery.getBatteryVoltage());
-
-			return talonFXSimState.getMotorVoltageMeasure();
-		}
-
-		/**
-		 * Gets the Id of this talonfx motor controller.
-		 * @return the id of the talonfx motor controller
-		 */
-		public int getId() {
-			return id;
-		}
-	}
-
-	public static class TalonFXMotorControllerWithRemoteCanCoderSim extends
-		TalonFXMotorControllerSim {
-		private final int encoderId;
-		private final CANcoderSimState remoteCancoderSimState;
-
-		/**
-		 * Constructs a TalonFX motor controller but with a cancoder sim.
-		 * @param talonFX motor to use
-		 * @param cancoder cancoder used for sim state
-		 */
-		public TalonFXMotorControllerWithRemoteCanCoderSim(
-			TalonFX talonFX,
-			CANcoder cancoder
-		) {
-			super(talonFX);
-			this.remoteCancoderSimState = cancoder.getSimState();
-
-			this.encoderId = cancoder.getDeviceID();
-		}
-
-		@Override
-		public Voltage updateControlSignal(
-				Angle mechanismAngle,
-				AngularVelocity mechanismVelocity,
-				Angle encoderAngle,
-				AngularVelocity encoderVelocity) {
-			remoteCancoderSimState.setSupplyVoltage(SimulatedBattery.getBatteryVoltage());
-			remoteCancoderSimState.setRawPosition(mechanismAngle);
-			remoteCancoderSimState.setVelocity(mechanismVelocity);
-
-			return super.updateControlSignal(
-				mechanismAngle, mechanismVelocity, encoderAngle, encoderVelocity);
-		}
-		/**
-		 * Get the identifier of the encoder paired with this motor.
-		 * @return the identifier of this sim motor
-		 */
-		public int getEncoderID() {
-			return encoderId;
 		}
 	}
 

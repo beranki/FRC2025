@@ -14,13 +14,14 @@ import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 
 import choreo.trajectory.SwerveSample;
-
+import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Subsystem;
@@ -137,10 +138,14 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
 		mapleSimSwerveDrivetrain = new MapleSimSwerveDrivetrain(
 			Seconds.of(SimConstants.SIM_LOOP_PERIOD),
 			Pounds.of(RobotConstants.MASS_WITH_BUMPER_LBS),
-			Inches.of(RobotConstants.LENGTH_IN),
-			Inches.of(RobotConstants.WIDTH_IN),
-			DCMotor.getKrakenX60(1),
-			DCMotor.getKrakenX60(1),
+			new Pair<Distance, Distance>(
+				Inches.of(RobotConstants.LENGTH_IN),
+				Inches.of(RobotConstants.WIDTH_IN)
+			),
+			new Pair<DCMotor, DCMotor>(
+				DCMotor.getKrakenX60(1),
+				DCMotor.getKrakenX60(1)
+			),
 			RobotConstants.WHEEL_COF,
 			getModuleLocations(),
 			getPigeon2(),

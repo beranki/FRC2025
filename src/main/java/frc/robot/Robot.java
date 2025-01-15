@@ -3,6 +3,8 @@
 // the WPILib BSD license file in the root directory of this project.
 package frc.robot;
 
+import dev.doglog.DogLog;
+import dev.doglog.DogLogOptions;
 // WPILib Imports
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -56,6 +58,7 @@ public class Robot extends TimedRobot {
 		System.out.println("robotInit");
 		input = new TeleopInput();
 
+		DogLog.setOptions(new DogLogOptions().withNtPublish(isSimulation()));
 
 		// Instantiate all systems here
 		if (HardwareMap.isDriveHardwarePresent()) {
@@ -140,7 +143,13 @@ public class Robot extends TimedRobot {
 	}
 
 	@Override
-	public void simulationPeriodic() { }
+	public void simulationPeriodic() {
+		// Log this
+		DogLog.log(
+			"Drive/FieldSimulation/SimulatedPose",
+			driveSystem.getMapleSimDrive().getSimulatedDriveTrainPose()
+		);
+	}
 
 	// Do not use robotPeriodic. Use mode specific periodic methods instead.
 	@Override

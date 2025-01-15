@@ -1,5 +1,11 @@
 package frc.robot;
 
+import static edu.wpi.first.units.Units.Inches;
+import static edu.wpi.first.units.Units.Pounds;
+import static edu.wpi.first.units.Units.Seconds;
+
+import com.ctre.phoenix6.configs.CANcoderConfiguration;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.swerve.SwerveDrivetrain;
@@ -8,21 +14,28 @@ import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 
 import choreo.trajectory.SwerveSample;
-
+import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
+import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj2.command.Subsystem;
+import frc.robot.constants.RobotConstants;
+import frc.robot.constants.SimConstants;
+import frc.robot.constants.TunerConstants;
+import frc.robot.utils.simulation.MapleSimSwerveDrivetrain;
 
 /**
  * Class that extends the Phoenix SwerveDrivetrain class and implements subsystem
  * so it can be used in command-based projects easily.
  */
 @SuppressWarnings("rawtypes")
-public class CommandSwerveDrivetrain extends SwerveDrivetrain {
+public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsystem {
 
 	/* Blue alliance sees forward as 0 degrees (toward red alliance wall) */
 	private static final Rotation2d BLUE_ALLIANCE_PERSPECTIVE_ROTATION = Rotation2d.kZero;
@@ -41,6 +54,8 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain {
 	private final PIDController autoYPid = new PIDController(5, 0, 0);
 	private final PIDController autoHeadingPid = new PIDController(0.75, 0, 0);
 
+	private MapleSimSwerveDrivetrain mapleSimSwerveDrivetrain;
+
 	/**
 	 * Constructs a CommandSwerveDrivetrain with the specified drivetrain constants and modules.
 	 *
@@ -50,13 +65,17 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain {
 	@SuppressWarnings("unchecked")
 	public CommandSwerveDrivetrain(
 		SwerveDrivetrainConstants drivetrainConstants,
-		SwerveModuleConstants<?, ?, ?>... modules
+		SwerveModuleConstants<
+			TalonFXConfiguration,
+			TalonFXConfiguration,
+			CANcoderConfiguration>... modules
 	) {
 		super(
 			TalonFX::new, TalonFX::new, CANcoder::new,
-			drivetrainConstants, modules
+			drivetrainConstants,
+			MapleSimSwerveDrivetrain.regulateModuleConstantsForSimulation(modules)
 		);
-
+		setupSimulation();
 		// setupPathplanner();
 	}
 
@@ -113,6 +132,38 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain {
 		}
 
 		return pos;
+	}
+
+	private void setupSimulation() {
+		mapleSimSwerveDrivetrain = new MapleSimSwerveDrivetrain(
+			Seconds.of(SimConstants.SIM_LOOP_PERIOD),
+			Pounds.of(RobotConstants.MASS_WITH_BUMPER_LBS),
+			new Pair<Distance, Distance>(
+				Inches.of(RobotConstants.LENGTH_IN),
+				Inches.of(RobotConstants.WIDTH_IN)
+			),
+			new Pair<DCMotor, DCMotor>(
+				DCMotor.getKrakenX60(1),
+				DCMotor.getKrakenX60(1)
+			),
+			RobotConstants.WHEEL_COF,
+			getModuleLocations(),
+			getPigeon2(),
+			getModules(),
+			TunerConstants.FRONT_LEFT,
+			TunerConstants.FRONT_RIGHT,
+			TunerConstants.BACK_LEFT,
+			TunerConstants.BACK_RIGHT
+		);
+	}
+
+	/**
+	 * Get the sim drive train as a MapleSimSwerveDrivetrain.
+	 * @return the sim drivetrain of the current class
+	 */
+	public MapleSimSwerveDrivetrain getSimDrivetrain() {
+		System.out.println(mapleSimSwerveDrivetrain);
+		return mapleSimSwerveDrivetrain;
 	}
 
 	// @Override

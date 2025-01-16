@@ -8,6 +8,7 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.sim.CANcoderSimState;
 import com.ctre.phoenix6.sim.TalonFXSimState;
 
+import dev.doglog.DogLog;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Voltage;
@@ -34,7 +35,10 @@ public class MotorSimUtil {
 				AngularVelocity encoderVelocity) {
 			talonFXSimState.setRawRotorPosition(encoderAngle);
 			talonFXSimState.setRotorVelocity(encoderVelocity);
-			talonFXSimState.setSupplyVoltage(SimulatedBattery.getBatteryVoltage());
+			var voltage = SimulatedBattery.getBatteryVoltage();
+			DogLog.log("Battery Voltage", voltage.toShortString());
+			DogLog.log("Motor Voltage", talonFXSimState.getMotorVoltageMeasure().toShortString());
+			talonFXSimState.setSupplyVoltage(voltage);
 
 			return talonFXSimState.getMotorVoltageMeasure();
 		}

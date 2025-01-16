@@ -16,6 +16,7 @@ import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 //CTRE Imports
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import choreo.auto.AutoFactory;
+import dev.doglog.DogLog;
 
 import com.ctre.phoenix6.swerve.SwerveRequest;
 
@@ -114,6 +115,7 @@ public class DriveFSMSystem extends SubsystemBase {
 				throw new IllegalStateException("Invalid state: " + currentState.toString());
 		}
 		currentState = nextState(input);
+		logger.applyStateLogging(drivetrain.getState());
 	}
 
 	/**
@@ -167,8 +169,18 @@ public class DriveFSMSystem extends SubsystemBase {
 	 *        the robot is in autonomous mode.
 	 */
 	private void handleTeleOpState(TeleopInput input) {
-		logger.applyStateLogging(drivetrain.getState());
 		drivetrain.applyOperatorPerspective();
+
+		DogLog.log("Target X",
+			-MathUtil.applyDeadband(
+				input.getDriveLeftJoystickY(), DriveConstants.DRIVE_DEADBAND) * maxSpeed);
+		DogLog.log("Target Y",
+			-MathUtil.applyDeadband(
+				input.getDriveLeftJoystickX(), DriveConstants.DRIVE_DEADBAND) * maxSpeed);
+		DogLog.log("Target Rotation",
+			-MathUtil.applyDeadband(
+				input.getDriveRightJoystickX(), DriveConstants.DRIVE_DEADBAND) * maxAngularRate);
+		DogLog.log("State", drivetrain.getState().ModuleStates);
 
 		drivetrain.setControl(
 			drive.withVelocityX(-MathUtil.applyDeadband(

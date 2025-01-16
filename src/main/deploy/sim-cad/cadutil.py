@@ -1,12 +1,16 @@
 import argparse
 import json
 import os
+from typing import Dict
 
-def generate_config(robot_name, width, length):
-    center_x = width / 2
-    center_y = length / 2
+def generate_config(robot_name: str, width: float, length: float) -> str:
+    # Calculate the center position of the CAD model using width and length
+    # center_x and center_y represent the midpoints of the model's width and length
+    #ASSUMPTION: the top-left corner (0, 0) as the origin.
+    center_x: float = width / 2
+    center_y: float = length / 2
 
-    config = {
+    config: Dict[str, any] = {
         "name": f"Robot_{robot_name}",
         "sourceUrl": "",
         "disableSimplification": False,
@@ -16,9 +20,16 @@ def generate_config(robot_name, width, length):
         "components": []
     }
 
-    output_dir = f"Robot_{robot_name}"
+    output_dir: str = f"Robot_{robot_name}"
     os.makedirs(output_dir, exist_ok=True)
-    config_file_path = os.path.join(output_dir, "config.json")
+
+    config_file_path: str = os.path.join(output_dir, "config.json")
+
+    if os.path.exists(config_file_path):
+        user_response: str = input(f"The file '{config_file_path}' already exists. Do you want to replace it? (y/n): ").strip().lower()
+        if user_response != 'y':
+            print("Operation aborted by the user.")
+            return config_file_path
 
     with open(config_file_path, 'w') as config_file:
         json.dump(config, config_file, indent=4)
@@ -27,11 +38,14 @@ def generate_config(robot_name, width, length):
     print(f"CAD model: {robot_name}, Width: {width}, Length: {length}")
     return config_file_path
 
-def main():
-    parser = argparse.ArgumentParser(description="Generate CAD config for FRC Robot")
+def main() -> None:
+    parser: argparse.ArgumentParser = argparse.ArgumentParser(description="Generate CAD config for FRC Robot")
     parser.add_argument("name", type=str, help="Robot CAD Name")
     parser.add_argument("width", type=float, help="Width of the CAD model")
     parser.add_argument("length", type=float, help="Length of the CAD model")
     
-    args = parser.parse_args()
+    args: argparse.Namespace = parser.parse_args()
     generate_config(args.name, args.width, args.length)
+
+if __name__ == "__main__":
+    main()

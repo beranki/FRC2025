@@ -14,6 +14,7 @@ import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 
 import choreo.trajectory.SwerveSample;
+
 import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -24,7 +25,9 @@ import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj2.command.Subsystem;
+
 import frc.robot.constants.RobotConstants;
 import frc.robot.constants.SimConstants;
 import frc.robot.constants.TunerConstants;
@@ -55,6 +58,7 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
 	private final PIDController autoHeadingPid = new PIDController(0.75, 0, 0);
 
 	private MapleSimSwerveDrivetrain mapleSimSwerveDrivetrain;
+	private Notifier simNotifier = null;
 
 	/**
 	 * Constructs a CommandSwerveDrivetrain with the specified drivetrain constants and modules.
@@ -133,7 +137,7 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
 
 		return pos;
 	}
-
+	@SuppressWarnings("unchecked")
 	private void setupSimulation() {
 		mapleSimSwerveDrivetrain = new MapleSimSwerveDrivetrain(
 			Seconds.of(SimConstants.SIM_LOOP_PERIOD),
@@ -155,6 +159,10 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
 			TunerConstants.BACK_LEFT,
 			TunerConstants.BACK_RIGHT
 		);
+
+		// Check if this could happen in simulationPeriodic
+		simNotifier = new Notifier(mapleSimSwerveDrivetrain::update);
+		simNotifier.startPeriodic(SimConstants.SIM_LOOP_PERIOD);
 	}
 
 	/**
@@ -162,7 +170,6 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
 	 * @return the sim drivetrain of the current class
 	 */
 	public MapleSimSwerveDrivetrain getSimDrivetrain() {
-		System.out.println(mapleSimSwerveDrivetrain);
 		return mapleSimSwerveDrivetrain;
 	}
 

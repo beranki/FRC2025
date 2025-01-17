@@ -3,6 +3,8 @@
 // the WPILib BSD license file in the root directory of this project.
 package frc.robot;
 
+import org.ironmaple.simulation.SimulatedArena;
+
 import dev.doglog.DogLog;
 import dev.doglog.DogLogOptions;
 // WPILib Imports
@@ -144,10 +146,19 @@ public class Robot extends TimedRobot {
 
 	@Override
 	public void simulationPeriodic() {
-		// Log this
 		DogLog.log(
 			"Drive/FieldSimulation/SimulatedPose",
 			driveSystem.getMapleSimDrive().getSimulatedDriveTrainPose()
+		);
+
+		DogLog.log(
+			"Drive/FieldSimulation/CoralPose",
+			SimulatedArena.getInstance().getGamePiecesArrayByType("Coral")
+		);
+
+		DogLog.log(
+			"Drive/FieldSimulation/AlgaePose",
+			SimulatedArena.getInstance().getGamePiecesArrayByType("Algae")
 		);
 	}
 

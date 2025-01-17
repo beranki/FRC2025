@@ -3,6 +3,7 @@ package frc.robot.systems;
 // WPILib Imports
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -181,19 +182,21 @@ public class DriveFSMSystem extends SubsystemBase {
 			-MathUtil.applyDeadband(
 				input.getDriveRightJoystickX(), DriveConstants.DRIVE_DEADBAND) * maxAngularRate);
 		DogLog.log("State", drivetrain.getState().ModuleStates);
+		DogLog.log("Robot Controller Battery Voltage", RobotController.getBatteryVoltage());
 
 		drivetrain.setControl(
-			drive.withVelocityX(-MathUtil.applyDeadband(
-				input.getDriveLeftJoystickY(), DriveConstants.DRIVE_DEADBAND
+			drive.withVelocityX(
+				-MathUtil.applyDeadband(
+					input.getDriveLeftJoystickY(), DriveConstants.DRIVE_DEADBAND
 				) * maxSpeed) // Drive forward with negative Y (forward)
 			.withVelocityY(
 				-MathUtil.applyDeadband(
 					input.getDriveLeftJoystickX(), DriveConstants.DRIVE_DEADBAND
-					) * maxSpeed) // Drive left with negative X (left)
+				) * maxSpeed) // Drive left with negative X (left)
 			.withRotationalRate(
 				-MathUtil.applyDeadband(
 					input.getDriveRightJoystickX(), DriveConstants.DRIVE_DEADBAND
-					) * maxAngularRate) // Drive counterclockwise with negative X (left)
+				) * maxAngularRate) // Drive counterclockwise with negative X (left)
 		);
 
 		if (input.getDriveTriangleButton()) {
@@ -321,7 +324,7 @@ public class DriveFSMSystem extends SubsystemBase {
 	 * @return the simulation
 	 */
 	public SwerveDriveSimulation getMapleSimDrive() {
-		return drivetrain.getSimDrivetrain().getMapleSimDrive();
+		return drivetrain.getSimDrivetrain().getDriveSimulation();
 
 	}
 }

@@ -134,7 +134,7 @@ public class MapleSimSwerveDrivetrain {
 	 * Gets the SwerveModuleSimulation injected into the SwerveDrivetrain.
 	 * @return the swerveModuleSimulation of this drivetrain
 	 */
-	public SwerveDriveSimulation getMapleSimDrive() {
+	public SwerveDriveSimulation getDriveSimulation() {
 		return mapleSimDrive;
 	}
 

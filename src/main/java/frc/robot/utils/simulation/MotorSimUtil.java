@@ -37,7 +37,8 @@ public class MotorSimUtil {
 			talonFXSimState.setRotorVelocity(encoderVelocity);
 			var voltage = SimulatedBattery.getBatteryVoltage();
 			DogLog.log("Battery Voltage", voltage.toShortString());
-			DogLog.log("Motor Voltage", talonFXSimState.getMotorVoltageMeasure().baseUnitMagnitude());
+			DogLog.log("Motor Voltage",
+				talonFXSimState.getMotorVoltageMeasure().baseUnitMagnitude());
 			talonFXSimState.setSupplyVoltage(voltage);
 
 			return talonFXSimState.getMotorVoltageMeasure();

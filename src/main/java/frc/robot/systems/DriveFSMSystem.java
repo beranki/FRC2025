@@ -316,6 +316,10 @@ public class DriveFSMSystem extends SubsystemBase {
 		return Commands.none();
 	}
 
+	/**
+	 * Get the maple-Sim Swerve simulation.
+	 * @return the simulation
+	 */
 	public SwerveDriveSimulation getMapleSimDrive() {
 		return drivetrain.getSimDrivetrain().getMapleSimDrive();
 

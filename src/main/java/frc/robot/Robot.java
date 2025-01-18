@@ -30,21 +30,9 @@ public class Robot extends TimedRobot {
 	private AutoRoutines autoRoutines;
 	private SendableChooser<Command> autoChooser = new SendableChooser<Command>();
 	private Command autoWorkflow;
-	// private Mech1FSMSystem mech1System;
-	// private Mech2FSMSystem mech2System;
-
-	// private AutoHandlerSystem autoHandler;
 
 	private static final Object[] PATH_1 = new Object[] {
 		"S1_R2",
-		AutoCommands.B_ALIGN_REEF2_L_TAG_CMD,
-		// score_command,
-		"R2_StationL",
-		AutoCommands.B_ALIGN_STATION_L_TAG_CMD,
-		// intake_command,
-		new Object[] {"StationL_R3", AutoCommands.DRIVE_BRAKE_CMD},
-		AutoCommands.B_ALIGN_REEF3_L_TAG_CMD,
-		//score_command
 	};
 
 	/**
@@ -67,17 +55,6 @@ public class Robot extends TimedRobot {
 		autoChooser.addOption("Path 1",
 			autoRoutines.generateSequentialAutoWorkflow(PATH_1).cmd());
 		SmartDashboard.putData("AUTO CHOOSER", autoChooser);
-
-	// 	if (HardwareMap.isMech1HardwarePresent()) {
-	// 		mech1System = new Mech1FSMSystem();
-	// 	}
-
-	// 	if (HardwareMap.isMech2HardwarePresent()) {
-	// 		mech2System = new Mech2FSMSystem();
-	// 	}
-	// 	autoHandler = new AutoHandlerSystem(driveSystem, mech1System, mech2System);
-
-
 	}
 
 	@Override
@@ -102,15 +79,11 @@ public class Robot extends TimedRobot {
 	public void teleopInit() {
 		System.out.println("-------- Teleop Init --------");
 		driveSystem.reset();
-		// mech1System.reset();
-		// mech2System.reset();
 	}
 
 	@Override
 	public void teleopPeriodic() {
 		driveSystem.update(input);
-		// mech1System.update(input);
-		// mech2System.update(input);
 	}
 
 	@Override

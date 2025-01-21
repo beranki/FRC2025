@@ -4,6 +4,8 @@
 package frc.robot;
 
 // Third Party Imports
+import org.ironmaple.simulation.SimulatedArena;
+
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
@@ -153,7 +155,6 @@ public class Robot extends LoggedRobot {
 	@Override
 	public void disabledInit() {
 		System.out.println("-------- Disabled Init --------");
-		Logger.end(); // Stop logging!
 		if (powerLogger != null) {
 			powerLogger.close();
 		}
@@ -179,10 +180,29 @@ public class Robot extends LoggedRobot {
 	public void simulationInit() {
 		System.out.println("-------- Simulation Init --------");
 		// don't preform simulated hardware init here, robotInit() still runs during sim
+		SimulatedArena.getInstance().resetFieldForAuto();
 	}
 
 	@Override
-	public void simulationPeriodic() { }
+	public void simulationPeriodic() {
+		driveSystem.getMapleSimDrivetrain().update();
+
+		Logger.recordOutput(
+			"FieldSimulation/SimulatedPose",
+			driveSystem.getMapleSimDrivetrain().getDriveSimulation().getSimulatedDriveTrainPose()
+		);
+
+		Logger.recordOutput(
+			"FieldSimulation/AlgaePoses",
+			SimulatedArena.getInstance().getGamePiecesArrayByType("Algae")
+		);
+
+		Logger.recordOutput(
+			"FieldSimulation/CoralPoses",
+			SimulatedArena.getInstance().getGamePiecesArrayByType("Coral")
+		);
+
+	}
 
 	// Do not use robotPeriodic. Use mode specific periodic methods instead.
 	@Override

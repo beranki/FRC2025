@@ -4,8 +4,6 @@
 package frc.robot;
 
 // Third Party Imports
-import choreo.auto.AutoChooser;
-import choreo.auto.AutoFactory;
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
@@ -19,6 +17,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 
 // Systems
 import frc.robot.systems.FunnelFSMSystem;
@@ -26,7 +25,7 @@ import frc.robot.systems.ElevatorFSMSystem;
 import frc.robot.systems.DriveFSMSystem;
 
 // Robot Imports
-import frc.robot.constants.TunerConstants;
+import frc.robot.auto.AutoRoutines;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -34,14 +33,11 @@ import frc.robot.constants.TunerConstants;
  */
 public class Robot extends LoggedRobot {
 	private TeleopInput input;
-	private TunerConstants constants;
 
 	// Systems
 	private DriveFSMSystem driveSystem;
-	private CommandSwerveDrivetrain swerveDrivetrain;
-	private AutoFactory autoFactory;
 	private AutoRoutines autoRoutines;
-	private AutoChooser autoChooser = new AutoChooser();
+	private SendableChooser<Command> autoChooser = new SendableChooser<Command>();
 	private Command autCommand;
 	private FunnelFSMSystem funnelSystem;
 	private ElevatorFSMSystem elevatorSystem;
@@ -49,6 +45,10 @@ public class Robot extends LoggedRobot {
 
 	// Logger
 	private PowerDistribution powerLogger;
+
+	private static final Object[] PATH_1 = new Object[] {
+		"S1_R2"
+	};
 
 	/**
 	 * This function is run when the robot is first started up and should be used for any
@@ -78,31 +78,24 @@ public class Robot extends LoggedRobot {
 
 		input = new TeleopInput();
 
-
 		// Instantiate all systems here
 		if (HardwareMap.isDriveHardwarePresent()) {
 			driveSystem = new DriveFSMSystem();
 
-			autoFactory = driveSystem.createAutoFactory();
-			autoRoutines = new AutoRoutines(autoFactory, driveSystem);
-
-			autoChooser.addRoutine("testPath", autoRoutines::testAuto);
-			SmartDashboard.putData("AUTO CHOOSER", autoChooser);
+			autoRoutines = new AutoRoutines(driveSystem);
 		}
 
-		if (HardwareMap.isElevatorHardwarePresent()) {
-			elevatorSystem = new ElevatorFSMSystem();
-		}
+		autoRoutines = new AutoRoutines(driveSystem);
 
-		if (HardwareMap.isFunnelHardwarePresent()) {
-			funnelSystem = new FunnelFSMSystem();
-		}
+		autoChooser.addOption("Path 1",
+			autoRoutines.generateSequentialAutoWorkflow(PATH_1).cmd());
+		SmartDashboard.putData("AUTO CHOOSER", autoChooser);
+
 	}
 
 	@Override
 	public void autonomousInit() {
 		System.out.println("-------- Autonomous Init --------");
-		// autoHandler.reset(AutoPath.PATH1);
 		autCommand = getAutonomousCommand();
 
 		if (autCommand != null) {
@@ -112,7 +105,6 @@ public class Robot extends LoggedRobot {
 
 	@Override
 	public void autonomousPeriodic() {
-		// autoHandler.update();
 		CommandScheduler.getInstance().run();
 		driveSystem.updateAutonomous();
 	}
@@ -123,24 +115,12 @@ public class Robot extends LoggedRobot {
 		if (driveSystem != null) {
 			driveSystem.reset();
 		}
-		if (funnelSystem != null) {
-			funnelSystem.reset();
-		}
-		if (elevatorSystem != null) {
-			elevatorSystem.reset();
-		}
 	}
 
 	@Override
 	public void teleopPeriodic() {
 		if (driveSystem != null) {
 			driveSystem.update(input);
-		}
-		if (funnelSystem != null) {
-			funnelSystem.update(input);
-		}
-		if (elevatorSystem != null) {
-			elevatorSystem.update(input);
 		}
 	}
 
@@ -188,6 +168,6 @@ public class Robot extends LoggedRobot {
 	 * @return the selected autonomous command
 	 */
 	public Command getAutonomousCommand() {
-		return autoChooser.selectedCommand();
+		return autoChooser.getSelected();
 	}
 }

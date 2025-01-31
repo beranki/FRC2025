@@ -1,126 +1,87 @@
 package frc.robot;
+import java.util.ArrayList;
 
+import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.networktables.DoubleArraySubscriber;
-import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.constants.VisionConstants;
 
+/**
+* This class is used to get the data from the Raspberry Pi.
+*
+* @author Jaseer Abdulla
+*/
 public class RaspberryPI {
-	private double fps = 0;
 	private NetworkTable table;
-
-	private DoubleSubscriber fpsCounter;
 	private DoubleArraySubscriber tagSubscriber;
-	private double previousValueReceived = 0;
-	private double previousTimeReceived = 0;
-	private Timer timer = new Timer();
-	public static final int VALUES_PER_TAG = 6;
 
-	/**Updates the FPS each iteration of the robot.*/
+	/**
+	* Default constructor for the RaspberryPi class.
+	*/
 	public RaspberryPI() {
-		timer.start();
 		table = NetworkTableInstance.getDefault().getTable("datatable");
-		fpsCounter = table.getDoubleTopic("x").subscribe(-1);
-		tagSubscriber = table.getDoubleArrayTopic("april_tag_data").subscribe(null);
-	}
-
-	/**Updates the values in SmartDashboard. */
-	public void update() {
-		updateFPS();
+		tagSubscriber = table.getDoubleArrayTopic("april_tag_data").subscribe(new double[] {});
 	}
 
 	/**
-	 * Updates the FPS each iteration of the robot.
+	 * Prints the raw data for the april tags on the rpi.
 	 */
-	public void updateFPS() {
-		double currentReceivedValue = fpsCounter.get();
-		if (currentReceivedValue != previousValueReceived) {
-			fps = 1.0 / (timer.get() - previousTimeReceived);
-			previousTimeReceived = timer.get();
-		}
-		previousValueReceived = currentReceivedValue;
-		SmartDashboard.putNumber("FPS", fps);
+	public void printRawData() {
+		double[] rawData = tagSubscriber.get();
+		System.out.println(rawData);
 	}
 
 	/**
-	 * @param id id of the april tag we are fetching data on
-	 * @return X value from the tag to camera in meters
-	 * This value is used in tag-relative swerve movements
-	 */
-	public double getAprilTagX(int id) {
-		if (!tagSubscriber.get().equals(null)) {
-			return tagSubscriber.get()[(VALUES_PER_TAG * (id - 1))];
-		} else {
-			return VisionConstants.UNABLE_TO_SEE_TAG_CONSTANT;
+	* Gets the data from the Raspberry Pi.
+	*
+	* @return  ArrayList<AprilTag>
+	*          The data from the Raspberry Pi
+	*/
+	public ArrayList<AprilTag> getAprilTags() {
+		ArrayList<AprilTag> atList = new ArrayList<>();
+		double[] rawData = tagSubscriber.get();
+
+		if (rawData.length == 0) {
+			return atList;
 		}
+
+		for (
+			int i = 0;
+			i < rawData.length;
+			i += VisionConstants.AT_ARR_INC
+		) {
+			atList.add(
+				new AprilTag((int) rawData[i],
+				"Reef Camera",
+					new Translation3d(
+						rawData[i + VisionConstants.AT_ARR_TRANSLATION_OFFSET],
+						rawData[i + VisionConstants.AT_ARR_TRANSLATION_OFFSET + 1],
+						rawData[i + VisionConstants.AT_ARR_TRANSLATION_OFFSET + 2]
+					),
+					new Rotation3d(
+						rawData[i + VisionConstants.AT_ARR_ROTATION_OFFSET],
+						rawData[i + VisionConstants.AT_ARR_ROTATION_OFFSET + 1],
+						rawData[i + VisionConstants.AT_ARR_ROTATION_OFFSET + 2]
+					)
+				)
+			);
+		}
+
+		return atList;
 	}
 
 	/**
-	 * @param id id of the april tag we are fetching data on
-	 * @return Y value from the tag to camera in meters
-	 * This value is used in tag-relative swerve movements
+	 * Gets an April Tag from the list given a certain tag.
+	 * @param id id of the april tag
+	 * @return the april tag matching the id
 	 */
-	public double getAprilTagY(int id) {
-		if (!tagSubscriber.get().equals(null)) {
-			return tagSubscriber.get()[(VALUES_PER_TAG * (id - 1)) + 1];
-		} else {
-			return VisionConstants.UNABLE_TO_SEE_TAG_CONSTANT;
-		}
+	public AprilTag getAprilTagWithID(int id) {
+		return getAprilTags()
+			.stream()
+			.filter(tag -> tag.getTagID() == id)
+			.findFirst()
+			.orElse(null);
 	}
-
-	/**
-	 * @param id id of the april tag we are fetching data on
-	 * @return Z value from the tag to camera in meters
-	 * This value is used in tag-relative swerve movements
-	 */
-	public double getAprilTagZ(int id) {
-		if (!tagSubscriber.get().equals(null)) {
-			return tagSubscriber.get()[(VALUES_PER_TAG * (id - 1)) + 2];
-		} else {
-			return VisionConstants.UNABLE_TO_SEE_TAG_CONSTANT;
-		}
-	}
-
-	/**
-	 * @param id id of the april tag we are fetching data on
-	 * @return X value from the camera to tag in meters
-	 * This value is proportional to yaw and is used in robot-relative swerve movements
-	 */
-	public double getAprilTagXInv(int id) {
-		if (!tagSubscriber.get().equals(null)) {
-			return tagSubscriber.get()[(VALUES_PER_TAG * (id - 1)) + 2 + 1];
-		} else {
-			return VisionConstants.UNABLE_TO_SEE_TAG_CONSTANT;
-		}
-	}
-
-	/**
-	 * @param id id of the april tag we are fetching data on
-	 * @return Y value from the camera to tag in meters
-	 * This value is proportional to pitch and is used in robot-relative swerve movements
-	 */
-	public double getAprilTagYInv(int id) {
-		if (!tagSubscriber.get().equals(null)) {
-			return tagSubscriber.get()[(VALUES_PER_TAG * (id - 1)) + 2 + 2];
-		} else {
-			return VisionConstants.UNABLE_TO_SEE_TAG_CONSTANT;
-		}
-	}
-
-	/**
-	 * @param id id of the april tag we are fetching data on
-	 * @return Z value from the camera to tag in meters
-	 * This value is used in robot-relative swerve movements
-	 */
-	public double getAprilTagZInv(int id) {
-		if (!tagSubscriber.get().equals(null)) {
-			return tagSubscriber.get()[(VALUES_PER_TAG * (id - 1)) + 2 + 2 + 1];
-		} else {
-			return VisionConstants.UNABLE_TO_SEE_TAG_CONSTANT;
-		}
-	}
-
 }

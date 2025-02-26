@@ -17,7 +17,7 @@ while True:
     tags = [10, 0, 0, 0, 3, 3, 3, 9, 9, 9, 11, 0, 0, 0, 2, 2, 2, 9, 9, 9, 12, 0, 0, 0, 1, 1, 1, 9, 9, 9]
     print(tag_module.sort_tags_distance(tags))
 
-    #print(tagData)
+    # print(tagData)
     
     #cv2.imshow('result', annotated_frame)
     key = cv2.waitKey(1) & 0xFF

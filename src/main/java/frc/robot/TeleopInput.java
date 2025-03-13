@@ -17,9 +17,8 @@ public class TeleopInput {
 
 	/* ======================== Private variables ======================== */
 	// Input objects
-	private PS4Controller driveController;
 	private PS4Controller mechController;
-
+	private PS4Controller driveController;
 	/* ======================== Constructor ======================== */
 	/**
 	 * Create a TeleopInput and register input devices. Note that while inputs
@@ -33,7 +32,6 @@ public class TeleopInput {
 
 	/* ======================== Public methods ======================== */
 	// Getter methods for fetch input values should be defined here.
-	// Method names should be descriptive of the behavior, so the
 	// control mapping is hidden from other classes.
 
 	/* ------------------------ Drive Controller ------------------------ */
@@ -42,21 +40,28 @@ public class TeleopInput {
 	 * @return Axis value
 	 */
 	public double getDriveLeftJoystickX() {
-		return driveController.getLeftX();
+		return -driveController.getLeftX();
 	}
 	/**
 	 * Get Y axis of Drive Controller.
 	 * @return Axis value
 	 */
 	public double getDriveLeftJoystickY() {
-		return driveController.getLeftY();
+		return -driveController.getLeftY();
 	}
 	/**
-	 * Get Y axis of Drive Controller.
+	 * Get X axis of Drive Controller right.
 	 * @return Axis value
 	 */
 	public double getDriveRightJoystickX() {
 		return driveController.getRightX();
+	}
+	/**
+	 * Get Y axis of Drive Controller right.
+	 * @return Axis value
+	 */
+	public double getDriveRightJoystickY() {
+		return driveController.getRightY();
 	}
 	/**
 	 * Get Triangle Button Pressed for Drive Controller.
@@ -66,34 +71,126 @@ public class TeleopInput {
 		return driveController.getTriangleButton();
 	}
 	/**
+	 * Get Square Button Pressed for Drive Controller.
+	 * @return Axis value
+	 */
+	public boolean getAlignReefButton() {
+		return driveController.getSquareButton();
+	}
+	/**
 	 * Get Circle Button Pressed for Drive Controller.
 	 * @return Axis value
 	 */
 	public boolean getDriveCircleButton() {
 		return driveController.getCircleButton();
 	}
+
+	/**
+	 * Get drive cross button.
+	 * @return value
+	 */
+	public boolean getDriveCrossButton() {
+		return driveController.getCrossButton();
+	}
 		/**
 	 * Get Share Button Pressed for Drive Controller.
 	 * @return Axis value
 	 */
-	public boolean getDriveBackButtonPressed() {
+	public boolean getSeedGyroButtonPressed() {
+		return driveController.getOptionsButton();
+	}
+
+	/**
+	 * Get the value of the L1 button.
+	 * @return L1 button value
+	 */
+	public boolean getAlignLeftOffsetButton() {
+		return driveController.getL1Button();
+	}
+
+	/**
+	 * Get the value of the R1 button.
+	 * @return R1 button value
+	 */
+	public boolean getAlignRightOffsetButton() {
+		return driveController.getR1Button();
+	}
+
+	/**
+	 * Get the value of the drive share button.
+	 * @return ddrive share button
+	 */
+	public boolean getDriveShareButtonPressed() {
 		return driveController.getShareButton();
 	}
 
-	/* ------------------------ Right Joystick ------------------------ */
+	/* ------------------------ Mech Controller ------------------------ */
+
 	/**
-	 * Get X axis of Right Joystick.
-	 * @return Axis value
+	 * Get the value of the source L2 target button (square).
+	 * @return If the button is pressed
 	 */
-	public double getMechLeftJoystickX() {
-		return mechController.getLeftX();
+	public boolean isL2ButtonPressed() {
+		return mechController.getSquareButton();
 	}
+
+	/**
+	 * Get the value of the L4 elevator target button (triangle).
+	 * @return If the button is pressed
+	 */
+	public boolean isL4ButtonPressed() {
+		return mechController.getTriangleButton();
+	}
+
+	/**
+	 * Get the value of the ground elevator target button (cross).
+	 * @return If the button is pressed
+	 */
+	public boolean isGroundButtonPressed() {
+		return mechController.getCrossButton();
+	}
+
+	/**
+	 * Get the value of the L3 elevator target button (circle).
+	 * @return If the button is pressed
+	 */
+	public boolean isL3ButtonPressed() {
+		return mechController.getCircleButton();
+	}
+
+	/**
+	 * Gets the value of the options button.
+	 * Intended to signify when the climber should go to the next state.
+	 * @return If the options button was pressed this tick
+	 */
+	public boolean isClimbAdvanceStateButtonPressed() {
+		return mechController.getOptionsButtonPressed();
+	}
+
+	/**
+	 * Gets the value of the L2 button.
+	 * Intended to signify when the climber should manually move.
+	 * @return If the L2 button was pressed this tick
+	 */
+	public boolean isClimbManualButtonPressed() {
+		return mechController.getL2Button();
+	}
+
 	/**
 	 * Get Y axis of Right Joystick.
 	 * @return Axis value
 	 */
-	public double getMechLeftJoystickY() {
-		return mechController.getLeftY();
+	public double getManualElevatorMovementInput() {
+		return -mechController.getRightY(); //up is negative y, negate for simplicity
+	}
+
+	/**
+	 * Gets the value of the L1 button.
+	 * Intended to signify when the funnel should open.
+	 * @return If the L1 button was pressed this tick
+	 */
+	public boolean isFunnelButtonPressed() {
+		return mechController.getL1Button();
 	}
 
 	/* ======================== Private methods ======================== */

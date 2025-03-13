@@ -1,0 +1,6 @@
+opencv-python
+pupil_apriltags
+linuxpy
+robotpy-cscore
+scipy
+robotpy-cscore

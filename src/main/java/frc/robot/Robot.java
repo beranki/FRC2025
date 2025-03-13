@@ -3,50 +3,66 @@
 // the WPILib BSD license file in the root directory of this project.
 package frc.robot;
 
+// Java Imports
+import java.util.HashMap;
+
+// Third Party Imports
+import org.ironmaple.simulation.SimulatedArena;
+import org.littletonrobotics.junction.LogFileUtil;
+import org.littletonrobotics.junction.LoggedRobot;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.NT4Publisher;
+import org.littletonrobotics.junction.wpilog.WPILOGReader;
+import org.littletonrobotics.junction.wpilog.WPILOGWriter;
+import com.ctre.phoenix6.Utils;
+
+
 // WPILib Imports
-import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.Filesystem;
+import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
-import frc.robot.auto.AutoRoutines;
-import frc.robot.constants.AutoConstants.AutoCommands;
+import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.net.WebServer;
+import edu.wpi.first.networktables.NetworkTableInstance;
 
 // Systems
+import frc.robot.systems.ClimberFSMSystem;
+import frc.robot.systems.ElevatorFSMSystem;
+import frc.robot.systems.FunnelFSMSystem;
+import frc.robot.systems.LEDFSMSystem;
 import frc.robot.systems.DriveFSMSystem;
-// import frc.robot.systems.Mech1FSMSystem;
-// import frc.robot.systems.Mech2FSMSystem;
-// import frc.robot.systems.AutoHandlerSystem;
-// import frc.robot.systems.AutoHandlerSystem.AutoPath;
+
+// Robot Imports
+import frc.robot.utils.Elastic;
+import frc.robot.auto.AutoRoutines;
+import frc.robot.logging.MechLogging;
+import frc.robot.motors.MotorManager;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
  * each mode, as described in the TimedRobot documentation.
  */
-public class Robot extends TimedRobot {
+public class Robot extends LoggedRobot {
 	private TeleopInput input;
+
 	// Systems
 	private DriveFSMSystem driveSystem;
 	private AutoRoutines autoRoutines;
-	private SendableChooser<Command> autoChooser = new SendableChooser<Command>();
-	private Command autoWorkflow;
-	// private Mech1FSMSystem mech1System;
-	// private Mech2FSMSystem mech2System;
 
-	// private AutoHandlerSystem autoHandler;
+	private SendableChooser<String> autoChooser = new SendableChooser<String>();
+	private String autCommand;
 
-	private static final Object[] PATH_1 = new Object[] {
-		"S1_R2",
-		AutoCommands.B_ALIGN_REEF2_L_TAG_CMD,
-		// score_command,
-		"R2_StationL",
-		AutoCommands.B_ALIGN_STATION_L_TAG_CMD,
-		// intake_command,
-		new Object[] {"StationL_R3", AutoCommands.DRIVE_BRAKE_CMD},
-		AutoCommands.B_ALIGN_REEF3_L_TAG_CMD,
-		//score_command
-	};
+	private ElevatorFSMSystem elevatorSystem;
+	private FunnelFSMSystem funnelSystem;
+	private ClimberFSMSystem climberSystem;
+	private LEDFSMSystem ledSystem;
 
+	// Logger
+	private PowerDistribution powerLogger;
+	private NetworkTableInstance ntInstance;
 	/**
 	 * This function is run when the robot is first started up and should be used for any
 	 * initialization code.
@@ -54,74 +70,166 @@ public class Robot extends TimedRobot {
 	@Override
 	public void robotInit() {
 		System.out.println("robotInit");
-		input = new TeleopInput();
+		WebServer.start(HardwareMap.ELASTIC_WEBSERVER_PORT,
+			Filesystem.getDeployDirectory().getPath());
 
+		Logger.recordMetadata("FRC2025", "Team2473"); // Set a metadata value
+		ntInstance = NetworkTableInstance.getDefault();
 
-		// Instantiate all systems here
-		if (HardwareMap.isDriveHardwarePresent()) {
-			driveSystem = new DriveFSMSystem();
+		if (isReal()) {
+			Logger.addDataReceiver(new WPILOGWriter()); // Log to a USB stick ("/U/logs")
+			Logger.addDataReceiver(new NT4Publisher()); // Publish data to NetworkTables
+			powerLogger = new PowerDistribution(1, ModuleType.kRev);
+				// Enables power distribution logging
+		} else if (isSimulation()) {
+			Logger.addDataReceiver(new NT4Publisher());
+		} else {
+			setUseTiming(false); // Run as fast as possible
+			String logPath = LogFileUtil.findReplayLog(); // Pull the replay log from AdvantageScope
+			Logger.setReplaySource(new WPILOGReader(logPath)); // Read replay log
+			Logger.addDataReceiver(new WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_sim")));
 		}
 
-		autoRoutines = new AutoRoutines(driveSystem);
+		Logger.start(); // Start logging!
 
-		autoChooser.addOption("Path 1",
-			autoRoutines.generateSequentialAutoWorkflow(PATH_1).cmd());
+		input = new TeleopInput();
+
+		if (Robot.isSimulation() || HardwareMap.isFunnelHardwarePresent()) {
+			funnelSystem = new FunnelFSMSystem();
+		}
+
+		if (Robot.isSimulation() || (HardwareMap.isFunnelHardwarePresent()
+			&& HardwareMap.isElevatorHardwarePresent())) {
+			elevatorSystem = new ElevatorFSMSystem(funnelSystem);
+		}
+
+		// Instantiate all systems here
+		if (Robot.isSimulation() || HardwareMap.isDriveHardwarePresent()) {
+			if (elevatorSystem != null) {
+				driveSystem = new DriveFSMSystem(elevatorSystem);
+			} else {
+				driveSystem = new DriveFSMSystem();
+			}
+		}
+
+		if (Robot.isSimulation() || HardwareMap.isClimberHardwarePresent()) {
+			climberSystem = new ClimberFSMSystem();
+		}
+
+		if (HardwareMap.isLEDPresent() && HardwareMap.isDriveHardwarePresent()
+			&& HardwareMap.isElevatorHardwarePresent() && HardwareMap.isFunnelHardwarePresent()
+			&& HardwareMap.isClimberHardwarePresent()) {
+			ledSystem = new LEDFSMSystem(driveSystem, funnelSystem, climberSystem);
+		}
+
+		autoRoutines = new AutoRoutines(
+			driveSystem, elevatorSystem, funnelSystem
+		);
+
+		for (HashMap.Entry<String, Object[]> auto
+			: autoRoutines.getAutoPathHandler().getAllAutos().entrySet()) {
+			autoChooser.addOption(auto.getKey(), auto.getKey());
+		}
+
 		SmartDashboard.putData("AUTO CHOOSER", autoChooser);
-
-	// 	if (HardwareMap.isMech1HardwarePresent()) {
-	// 		mech1System = new Mech1FSMSystem();
-	// 	}
-
-	// 	if (HardwareMap.isMech2HardwarePresent()) {
-	// 		mech2System = new Mech2FSMSystem();
-	// 	}
-	// 	autoHandler = new AutoHandlerSystem(driveSystem, mech1System, mech2System);
-
-
 	}
 
 	@Override
 	public void autonomousInit() {
 		System.out.println("-------- Autonomous Init --------");
-		// autoHandler.reset(AutoPath.PATH1);
-		autoWorkflow = getSelectedAutoRoutine();
+		Elastic.selectTab("Autonomous");
+		autCommand = getAutonomousCommand();
 
-		if (autoWorkflow != null) {
-			autoWorkflow.schedule();
+		/* If all available auto systems are true, then it will throw exception. */
+		boolean throwException =
+			HardwareMap.isCVHardwarePresent()
+			&& HardwareMap.isDriveHardwarePresent()
+			&& HardwareMap.isElevatorHardwarePresent()
+			&& HardwareMap.isFunnelHardwarePresent();
+
+		if (autCommand != null) {
+			Command scheduledCommand = autoRoutines.generateSequentialAutoWorkflow(
+				autoRoutines.getAutoPathHandler().getAllAutos().get(autCommand), throwException
+			);
+
+			if (Robot.isSimulation()) {
+				driveSystem.getMapleSimDrivetrain().getDriveSimulation()
+					.setSimulationWorldPose(autoRoutines.getInitialAutoPose());
+			}
+
+			scheduledCommand.schedule();
 		}
 	}
 
 	@Override
 	public void autonomousPeriodic() {
-		// autoHandler.update();
 		CommandScheduler.getInstance().run();
-		driveSystem.updateAutonomous();
+		if (HardwareMap.isDriveHardwarePresent()) {
+			driveSystem.updateAutonomous();
+		}
+
+		if (ledSystem != null) {
+			ledSystem.updateAutonomous();
+		}
+
+
+		MotorManager.update();
 	}
 
 	@Override
 	public void teleopInit() {
 		System.out.println("-------- Teleop Init --------");
-		driveSystem.reset();
-		// mech1System.reset();
-		// mech2System.reset();
+		Elastic.selectTab("Teleoperated");
+		if (driveSystem != null) {
+			driveSystem.reset();
+		}
+		if (funnelSystem != null) {
+			funnelSystem.reset();
+		}
+		if (climberSystem != null) {
+			climberSystem.reset();
+		}
+		if (elevatorSystem != null) {
+			elevatorSystem.reset();
+		}
+
+		if (ledSystem != null) {
+			ledSystem.reset();
+		}
 	}
 
 	@Override
 	public void teleopPeriodic() {
-		driveSystem.update(input);
-		// mech1System.update(input);
-		// mech2System.update(input);
+		if (driveSystem != null) {
+			driveSystem.update(input);
+		}
+		if (funnelSystem != null) {
+			funnelSystem.update(input);
+		}
+		if (climberSystem != null) {
+			climberSystem.update(input);
+		}
+		if (elevatorSystem != null) {
+			elevatorSystem.update(input);
+		}
+
+		if (ledSystem != null) {
+			ledSystem.update(input);
+		}
+		MotorManager.update();
+		ntInstance.flush();
 	}
 
 	@Override
 	public void disabledInit() {
 		System.out.println("-------- Disabled Init --------");
+		if (powerLogger != null) {
+			powerLogger.close();
+		}
 	}
 
 	@Override
-	public void disabledPeriodic() {
-
-	}
+	public void disabledPeriodic() { }
 
 	@Override
 	public void testInit() {
@@ -130,28 +238,93 @@ public class Robot extends TimedRobot {
 
 	@Override
 	public void testPeriodic() {
-
 	}
 
 	/* Simulation mode handlers, only used for simulation testing  */
 	@Override
 	public void simulationInit() {
 		System.out.println("-------- Simulation Init --------");
+		// don't preform simulated hardware init here, robotInit() still runs during sim
+		SimulatedArena.getInstance().resetFieldForAuto();
 	}
 
 	@Override
-	public void simulationPeriodic() { }
+	public void simulationPeriodic() {
+		if (HardwareMap.isDriveHardwarePresent()) {
+			driveSystem.getMapleSimDrivetrain().update();
+			driveSystem.updateRaspberryPi();
+		}
+
+		Logger.recordOutput("MatchTime", Utils.getCurrentTimeSeconds());
+
+		Logger.recordOutput(
+			"FieldSimulation/Robot/Primary Elevator Pose",
+			MechLogging.getInstance().getPrimaryElevatorPose()
+		);
+
+		Logger.recordOutput(
+			"FieldSimulation/Robot/Secondary Elevator Pose",
+			MechLogging.getInstance().getSecondaryElevatorPose()
+		);
+
+		Logger.recordOutput(
+			"FieldSimulation/Robot/Climber Pose",
+			MechLogging.getInstance().getClimberPose()
+		);
+
+		Logger.recordOutput(
+			"FieldSimulation/Robot/DriveTrain Pose",
+			driveSystem.getMapleSimDrivetrain().getDriveSimulation().getSimulatedDriveTrainPose()
+		);
+
+		Logger.recordOutput(
+			"FieldSimulation/AlgaePoses",
+			SimulatedArena.getInstance().getGamePiecesArrayByType("Algae")
+		);
+
+		Logger.recordOutput(
+			"FieldSimulation/CoralPoses",
+			SimulatedArena.getInstance().getGamePiecesArrayByType("Coral")
+		);
+
+		Logger.recordOutput(
+			"FieldSimulation/Poses",
+			MechLogging.getInstance().getRobotPoses()
+		);
+
+	}
 
 	// Do not use robotPeriodic. Use mode specific periodic methods instead.
 	@Override
-	public void robotPeriodic() { }
+	public void robotPeriodic() {
+		if (driveSystem != null) {
+			driveSystem.updateLogging();
+			driveSystem.updateVisionEstimates();
+		}
+
+		if (funnelSystem != null) {
+			funnelSystem.updateLogging();
+		}
+
+		if (elevatorSystem != null) {
+			elevatorSystem.updateLogging();
+		}
+
+		if (climberSystem != null) {
+			climberSystem.updateLogging();
+		}
+
+		if (ledSystem != null) {
+			ledSystem.updateLogging();
+		}
+	}
 
 	/**
 	 * Gets the autonomous command selected by the auto chooser.
 	 *
 	 * @return the selected autonomous command
 	 */
-	public Command getSelectedAutoRoutine() {
+	public String getAutonomousCommand() {
 		return autoChooser.getSelected();
 	}
 }

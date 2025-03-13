@@ -5,8 +5,9 @@ This project will use the FSMSystem framework, representing each subsystem as a 
 
 FSM diagrams for each subsystem are located in the [doc](doc) folder.
 * [Drive FSM](doc/DriveFSM.md)
-* [Mech 1 FSM](doc/Mech1FSM.md)
-* [Mech 2 FSM](doc/Mech2FSM.md)
+* [Elevator FSM](doc/ElevatorFSM.md)
+* [Funnel FSM](doc/FunnelFSM.md)
+* [Climber FSM](doc/ClimberFSM.md)
 
 [![Javadoc](https://github.com/Tino-FRC-2473/FRC2025/actions/workflows/javadoc.yml/badge.svg)](https://github.com/Tino-FRC-2473/FRC2025/actions/workflows/javadoc.yml)
 
@@ -33,3 +34,13 @@ Everyone should read and follow the rules in "[How to write a Git Commit Message
 	- Main branch merges require formal pull requests (peer & mentor reviewed) and must pass build and style checks. These changes should already have been tested on a test branch.
 	- Main branch will serve as the weekly baseline for new development.
   - Main branch is expected to be configured to run on the competition robot.
+
+# Competition branching
+A dedicated branch will be created to track code changes made at each competition.
+- For Pinnacles, the competition branch will be `comp/pinnacles`.
+- All changes must be commited to this branch prior to the final robot code upload before queueing for each match.
+
+The commit used for each match must be tagged prior to queueing. This is essential for post-match debugging and analysis. Tags should be namespaced under the competition name and indicated the match type `qual` or `playoff`.
+- For instance, qualification match 3 at Pinnacles should be tagged with `comp/pinnacles/qual_3`.
+- Create annotated tags with the `git tag` command. I.e. `git tag -a "comp/pinnacles/qual_3"`. Write a summary of any code or configuration changes made in the tag description.
+- Tags must be pushed with `--tags` option. I.e `git push origin --tags`.
